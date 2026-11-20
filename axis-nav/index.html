@@ -71,7 +71,8 @@ function axisH(y,x1,x2){const a=opt.axis;if(a==='none')return'';if(a==='double')
 
 // ---- focus: the chosen item is sharp, things go softer the farther they are from it; pointing at one brings it into focus
 const FOCUS=d=>Math.max(0,Math.min(.55,(Math.abs(d)-.15)*.2));
-const FZ={};const DEFS='<defs>'+[1,2,3,4,5,6,7,8].map(k=>`<filter id="b${k}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="${(k*.2).toFixed(1)}"/></filter>`).join('')+'</defs>';
+const HATCH='<pattern id="hatch" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="#1c1b18" stroke-width=".7"/></pattern>';
+const FZ={};const DEFS='<defs>'+HATCH+[1,2,3,4,5,6,7,8].map(k=>`<filter id="b${k}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="${(k*.2).toFixed(1)}"/></filter>`).join('')+'</defs>';
 function fz(key,amt){FZ[key]=sp(FZ[key]??amt,amt,.12);const px=FZ[key]*2,k=Math.round(px/.2);return k<1?{}:{filter:`url(#b${Math.min(8,k)})`}}
 const fzR=i=>fz('r'+i,i===hv?0:cen<0?FOCUS(2):FOCUS((i-cen)*1.3));
 const fzT=i=>{const d=Math.min(Math.abs(i-hemi),4-Math.abs(i-hemi));return fz('t'+i,i===hvH?0:FOCUS(d*2.2))};
@@ -195,9 +196,12 @@ function barRail(){const p=prog('r'),[tx,ty]=TGR();let o=toggleMark(tx,ty,EXP.r.
   return o}
 
 // a hemisphere icon is the globe as the world draws it (0° to the right, 90°E below, 180° left, 90°W above), its half filled in
-function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=5,on=i===hemi,a0=c-Math.PI/2,a1=c+Math.PI/2,f=fzT(i);
-  return E_('g',f,E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.9:.45})
-    +E_('path',{d:`M${x} ${y}L${(x+r*Math.cos(a0)).toFixed(2)} ${(y+r*Math.sin(a0)).toFixed(2)}A${r} ${r} 0 0 1 ${(x+r*Math.cos(a1)).toFixed(2)} ${(y+r*Math.sin(a1)).toFixed(2)}Z`,fill:'var(--ink)','fill-opacity':on?.9:.4}))}
+// a hemisphere icon is drawn like a section in a technical drawing: a fine circle cut by a diameter, the half it covers hatched.
+// directions follow the world (0° right, 90°E below, 180° left, 90°W above)
+function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math.PI/2,a1=c+Math.PI/2,f=fzT(i),
+    p0=[x+r*Math.cos(a0),y+r*Math.sin(a0)],p1=[x+r*Math.cos(a1),y+r*Math.sin(a1)],op=on?.95:.5;
+  return E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
+    +E_('circle',{cx:x,cy:y,r,class:'ln'})+E_('line',{x1:p0[0].toFixed(2),y1:p0[1].toFixed(2),x2:p1[0].toFixed(2),y2:p1[1].toFixed(2),class:'ln','stroke-width':.6}))}
 const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
 function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
   const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
@@ -213,7 +217,6 @@ function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((
     const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),lx=rx+(opt.bar==='plate'?22:16);
     o+=E_('text',{x:lx,y:y+4,style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*fade,...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
     if(ro>.5&&n)o+=strip(i,lx+120,y,ro)});
-  o+=preview();
   const ax=TX(HEMI[hemi].c),ay=TYx(ax)+12,bx=(cen>=0?RX(cen):x0)+12,by=cen>=0?RY(cen):null;
   o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
   o+=touch(hvH!==null&&hvH!==hemi?[TX(HEMI[hvH].c),TYx(TX(HEMI[hvH].c))]:null,'t')+touch(hv!==null&&hv!==cen?[RX(hv),RY(hv)]:null,'r');
