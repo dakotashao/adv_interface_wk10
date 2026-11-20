@@ -42,7 +42,7 @@ addEventListener('message',e=>{const d=e.data||{};if(d.t==='state'){if(d.hemi!==
 // options
 const opt={nav:'construct',mark:'dot',axis:'line',era:'1700s',lines:'hover',answer:'rings',motion:'compass',touch:'pencil',bar:'plate'};
 const GROUPS=[['nav',['ruler','index','construct']]];
-const SUB=[['mark',['dot','plus','tick','ring']],['axis',['line','dashed','double','none']],['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
+const SUB=[['mark',['dot','plus','tick','ring']],['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
 function drawPick(){const row=([k,vs])=>`<div class="g"><b>${k}</b>${vs.map(v=>`<button data-k="${k}" data-v="${v}" class="${opt[k]===v?'on':''}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`;
   let h=GROUPS.map(row).join('');if(opt.nav==='construct')h+=`<div class="sub">${SUB.map(row).join('')}</div>`;else h+=`<div class="sub">${row(SUB[2])}</div>`;
   const el=document.getElementById('pick');el.innerHTML=h;el.querySelectorAll('button').forEach(b=>b.onclick=()=>{opt[b.dataset.k]=b.dataset.v;G.init=0;lastAct=performance.now();drawPick()})}
