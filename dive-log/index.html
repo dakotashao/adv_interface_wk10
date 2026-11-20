@@ -89,10 +89,10 @@ svg.tb{position:absolute;left:0;bottom:22px;width:100%;height:76px;overflow:visi
 <canvas id="bgfx"></canvas><div class="grain" id="grain"></div><div class="pals" id="pals"></div><div class="spec" id="spec"><h4>TONE</h4><table><tr><td>Playful</td><td>sunlit reef — quick springs, bubbles shove each other</td></tr></table><h4>SIDEBAR</h4><table><tr><td>Width</td><td>300 expanded · 64 collapsed</td></tr><tr><td>Item</td><td>bubble r 20 · stretched to 224 × 40 / 40 × 40 collapsed</td></tr><tr><td>Overlap</td><td>centres 0.84 × (r₁+r₂) — neighbours share a wall</td></tr><tr><td>Section bag</td><td>6 around bubbles · 28 between sections (10 collapsed)</td></tr><tr><td>Toggle</td><td>fixed top-left, both states</td></tr><tr><td>Padding</td><td>icon 16 · slot 18 · icon → label 10</td></tr></table><h4>CONTENT</h4><table><tr><td>Hero</td><td>one big bubble, r 150 · holds a grid-foam numeral</td></tr><tr><td>Satellites</td><td>r 56–72 · share a wall with the hero</td></tr><tr><td>Rows</td><td>bubble r 27 stretched to the column · 0.86 overlap</td></tr><tr><td>Action</td><td>petal r 26 attached under the hero</td></tr></table><h4>TYPE</h4><table><tr><td>Numerals</td><td>grid-foam · bubble r 3.1 per 100 · neck 2.4</td></tr><tr><td>Label</td><td>Inter Tight 400 · 14 / 16</td></tr><tr><td>Header</td><td>500 · 10.5 · caps · +0.08em · 50 %</td></tr><tr><td>Title</td><td>300 · 46 · −3.5 %</td></tr></table><h4>STATES</h4><table><tr><td>Enabled</td><td>resting foam, equal bubbles</td></tr><tr><td>Hover</td><td>r ×1.12 (hero ×1.04) · solid hover colour · neighbours’ walls move</td></tr><tr><td>Pressed</td><td>r ×0.92</td></tr><tr><td>Selected</td><td>solid accent</td></tr><tr><td>Pressure</td><td>colour only appears as light inside a bubble — hold, or breathing</td></tr></table><h4>COLOUR</h4><table><tr><td>Water</td><td>#6FC6C2 → #0A3238</td></tr><tr><td>Bubble</td><td>white 13 % · no stroke</td></tr><tr><td>Hover</td><td>#3F9A99</td></tr><tr><td>Selected</td><td>#FF8A5C coral · ink #14262A</td></tr><tr><td>Pressure / badge</td><td>#FFD25C → #FF8A5C</td></tr></table></div>
 <script>
 const CFG={"theme": {"mode": "glass", "ink": "#f2fbfa", "surface": "#0f3f47", "cell": "rgba(255,255,255,0.13)", "hover": "#3f9a99", "hoverInk": "#f2fbfa", "accent": "#ff8a5c", "accentInk": "#14262a", "badge": "#ffd25c", "badgeInk": "#14262a", "bag": "rgba(255,255,255,0.05)", "hot": "#ffd25c", "aura1": "#fff1b0", "aura2": "#ff8a5c"}, "start": "trip", "sections": [{"h": null, "items": [{"k": "log", "l": "Log a dive", "ic": "plus", "slot": {"t": "text", "v": "\u2318N"}}]}, {"h": "Logbook", "items": [{"k": "all", "l": "All dives", "ic": "book", "slot": {"t": "text", "v": "128"}}, {"k": "trip", "l": "Komodo '26", "ic": "trip", "slot": {"t": "badge", "v": "3"}}, {"k": "fav", "l": "Favourites", "ic": "star", "slot": {"t": "text", "v": "9"}}]}, {"h": "Places", "items": [{"k": "sites", "l": "Dive sites", "ic": "pin", "slot": {"t": "text", "v": "34"}}, {"k": "map", "l": "Map", "ic": "map"}]}, {"h": "Life list", "items": [{"k": "species", "l": "Species seen", "ic": "fish", "slot": {"t": "text", "v": "212"}}, {"k": "wish", "l": "Wishlist", "ic": "heart", "slot": {"t": "text", "v": "5"}}]}, {"h": "Kit", "items": [{"k": "tanks", "l": "Tanks & service", "ic": "tank", "slot": {"t": "icon", "v": "alert"}}, {"k": "cert", "l": "Certifications", "ic": "card", "slot": {"t": "text", "v": "AOW"}}, {"k": "set", "l": "Settings", "ic": "gear"}]}], "pages": {"trip": {"title": "Komodo '26", "sub": "Your computer synced 3 dives \u2014 tap one, then add what you saw", "hero": {"n": "3", "unit": "new dives", "unit2": "Nov 14 \u2013 15"}, "sat": [{"a": "Manta Point", "b": "Nov 15", "ang": -42, "r": 64, "show": {"n": "12", "unit": "m deepest", "unit2": "Manta Point \u00b7 62 min"}}, {"a": "Crystal Rock", "b": "Nov 14", "ang": -2, "r": 58, "show": {"n": "18", "unit": "m deepest", "unit2": "Crystal Rock \u00b7 56 min"}}, {"a": "Castle Rock", "b": "Nov 14", "ang": 36, "r": 52, "show": {"n": "24", "unit": "m deepest", "unit2": "Castle Rock \u00b7 51 min"}}], "action": {"l": "Add notes", "go": "species"}, "rowsTitle": "Earlier this trip", "rows": [{"a": "Batu Bolong", "b": "Nov 13 \u00b7 2 turtles, 1 reef shark", "c": "26 m"}, {"a": "Siaba Besar", "b": "Nov 13 \u00b7 14 species", "c": "10 m"}, {"a": "Tatawa Besar", "b": "Nov 12 \u00b7 drift", "c": "19 m"}]}, "log": {"title": "Log a dive", "sub": "3 dives are waiting from your Peregrine", "hero": {"n": "3", "unit": "waiting", "unit2": "hold to import all"}, "action": {"l": "Import", "go": "trip"}, "rowsTitle": "From your computer", "rows": [{"a": "Manta Point", "b": "Nov 15 \u00b7 09:05", "c": "12 m"}, {"a": "Crystal Rock", "b": "Nov 14 \u00b7 11:40", "c": "18 m"}, {"a": "Castle Rock", "b": "Nov 14 \u00b7 08:12", "c": "24 m"}]}, "all": {"title": "All dives", "sub": "Since your first dive in 2021", "stats": [{"n": "128", "l": "dives", "r": 100}, {"n": "104", "l": "hours underwater", "r": 84}, {"n": "28", "l": "m deepest", "r": 70}], "rowsTitle": "Most recent", "rows": [{"a": "#128 Manta Point", "b": "Komodo \u00b7 Nov 15", "c": "12 m \u00b7 62 min"}, {"a": "#127 Crystal Rock", "b": "Komodo \u00b7 Nov 14", "c": "18 m \u00b7 56 min"}, {"a": "#126 Castle Rock", "b": "Komodo \u00b7 Nov 14", "c": "24 m \u00b7 51 min"}, {"a": "#125 Blue Corner", "b": "Palau \u00b7 Aug 2", "c": "28 m \u00b7 44 min"}]}, "fav": {"title": "Favourites", "sub": "9 dives you starred", "rows": [{"a": "Blue Corner", "b": "Palau \u00b7 grey reef sharks", "c": "28 m"}, {"a": "Batu Bolong", "b": "Komodo \u00b7 turtles", "c": "26 m"}, {"a": "Casino Point", "b": "Catalina \u00b7 kelp forest", "c": "14 m"}, {"a": "German Channel", "b": "Palau \u00b7 mantas", "c": "16 m"}]}, "sites": {"title": "Dive sites", "sub": "Where you have been", "stats": [{"n": "34", "l": "sites", "r": 92}, {"n": "6", "l": "countries", "r": 72}], "rowsTitle": "Most visited", "rows": [{"a": "Casino Point", "b": "Catalina, California", "c": "11 dives"}, {"a": "Batu Bolong", "b": "Komodo, Indonesia", "c": "7 dives"}, {"a": "Blue Corner", "b": "Palau", "c": "4 dives"}]}, "map": {"title": "Map", "sub": "Bubble size = dives in that sea", "stats": [{"n": "52", "l": "Indonesia", "r": 110}, {"n": "41", "l": "California", "r": 96}, {"n": "18", "l": "Palau", "r": 66}, {"n": "9", "l": "Mexico", "r": 50}]}, "species": {"title": "Species seen", "sub": "212 species \u00b7 3 new this trip \u2014 tap to see", "hero": {"n": "212", "unit": "species", "unit2": "since 2021", "numH": 80}, "sat": [{"a": "Reef manta", "b": "new", "ang": -55, "r": 64, "show": {"n": "1", "unit": "reef manta ray", "unit2": "Manta Point \u00b7 Nov 15"}}, {"a": "Hawksbill", "b": "new", "ang": 0, "r": 58, "show": {"n": "2", "unit": "hawksbill turtles", "unit2": "Batu Bolong \u00b7 Nov 13"}}, {"a": "Frogfish", "b": "new", "ang": 50, "r": 54, "show": {"n": "1", "unit": "painted frogfish", "unit2": "Siaba Besar \u00b7 Nov 13"}}], "rowsTitle": "Most seen", "rows": [{"a": "Garibaldi", "b": "Hypsypops rubicundus", "c": "60\u00d7"}, {"a": "Nudibranch", "b": "Chromodoris annae", "c": "41\u00d7"}, {"a": "Green sea turtle", "b": "Chelonia mydas", "c": "23\u00d7"}]}, "wish": {"title": "Wishlist", "sub": "5 animals you hope to meet", "rows": [{"a": "Whale shark", "b": "Ningaloo \u00b7 Mar \u2013 Jul", "c": "\u2014"}, {"a": "Mola mola", "b": "Bali \u00b7 Jul \u2013 Oct", "c": "\u2014"}, {"a": "Pygmy seahorse", "b": "Raja Ampat", "c": "\u2014"}, {"a": "Thresher shark", "b": "Malapascua", "c": "\u2014"}]}, "tanks": {"title": "Tanks & service", "sub": "Your regulator is due", "hero": {"n": "12", "unit": "months since service", "unit2": "hold to book a check"}, "action": {"l": "Book service", "go": "tanks"}, "rowsTitle": "Kit", "rows": [{"a": "Regulator", "b": "Apeks XTX50", "c": "due"}, {"a": "Steel 12 L", "b": "Inspected Mar 2026", "c": "OK"}, {"a": "BCD", "b": "Serviced Jun 2026", "c": "OK"}]}, "cert": {"title": "Certifications", "sub": "Advanced Open Water", "stats": [{"n": "30", "l": "m max depth", "r": 90}, {"n": "2", "l": "cards", "r": 66}], "rows": [{"a": "Advanced Open Water", "b": "PADI \u00b7 2024", "c": "AOW"}, {"a": "Enriched Air", "b": "PADI \u00b7 2025", "c": "EANx"}]}, "set": {"title": "Settings", "sub": "Units, sync, backup", "rows": [{"a": "Units", "b": "Metric", "c": "m \u00b7 bar"}, {"a": "Dive computer", "b": "Shearwater Peregrine", "c": "Connected"}, {"a": "Backup", "b": "iCloud", "c": "On"}]}}, "pals": [{"name": "Haze \u00b7 black + mint", "dot": "#b7a9ae", "theme": {"ink": "#f7f3ef", "cell": "#8d807d", "heroCell": "#1f1b19", "hover": "#f3efe9", "hoverInk": "#1f1b19", "accent": "#bff7d9", "accentInk": "#1f1b19", "badge": "#bff7d9", "badgeInk": "#1f1b19", "bag": "#a19490", "hot": "#bff7d9", "aura1": "#effff6", "aura2": "#8ff0c0", "grain": 1, "glow": 1}, "vars": ";--bg:radial-gradient(28% 22% at 82% 74%,rgba(191,247,217,.55) 0%,rgba(191,247,217,0) 100%),linear-gradient(180deg,#a69aa6 0%,#b7a9ae 32%,#c8b6ad 58%,#bba897 78%,#8c7b73 100%) fixed;--ink:#f7f3ef;--dim:rgba(247,243,239,0.62);--row:#8d807d;--rowh:#f3efe9;--dotc:rgba(247,243,239,0.14);--accent:#bff7d9;--accentInk:#1f1b19;--hoverInk:#1f1b19;--specbg:#8f8380;--line:rgba(247,243,239,0.15);--glass:#8d807d;--auraBg:none"}], "bgs": [{"name": "Haze", "dot": "#b7a9ae", "bg": "radial-gradient(28% 22% at 82% 74%,rgba(191,247,217,.55) 0%,rgba(191,247,217,0) 100%),linear-gradient(180deg,#a69aa6 0%,#b7a9ae 32%,#c8b6ad 58%,#bba897 78%,#8c7b73 100%)"}]};
-const SKEY='w9state3:'+document.title;let SAVED='';try{SAVED=localStorage.getItem(SKEY)||''}catch(e){}
+const SKEY='w9state5:'+document.title;let SAVED='';try{SAVED=localStorage.getItem(SKEY)||''}catch(e){}
 const HSRC=location.hash.length>1?location.hash:SAVED;
 const HP=k=>{const m=HSRC.match(new RegExp(k+'(\\d+)'));return m?+m[1]:0};
-const PALI=Math.min((CFG.pals||[1]).length-1,HP('p')),BGI=0,SFI=HP('s'),PAI=HP('a'),GRI=HP('g'),STI=Math.min(1,HP('t')),FRI=HP('f'),BCI=Math.min((CFG.bgs||[1]).length-1,HP('c'));
+const PALI=Math.min((CFG.pals||[1]).length-1,HP('p')),BGI=0,SFI=HP('s'),PAI=HP('a'),GRI=/g\d/.test(HSRC)?HP('g'):6,HVI=/h\d/.test(HSRC)?HP('h'):(CFG.defHover||0),LBI=/l\d/.test(HSRC)?HP('l'):(CFG.defLabel||0),STI=Math.min(1,HP('t')),FRI=HP('f'),BCI=Math.min((CFG.bgs||[1]).length-1,HP('c'));
 if(CFG.pals){Object.assign(CFG.theme,CFG.pals[PALI].theme);document.documentElement.style.cssText+=CFG.pals[PALI].vars;}
 if(CFG.bgs){document.documentElement.style.setProperty('--bg',CFG.bgs[BCI].bg+' fixed');CFG.theme.grain=0}
 
@@ -102,7 +102,7 @@ const SURFS=[null,
  {name:'Light edge',attrs:{fill:'url(#sfg2)',stroke:'url(#sfg)','stroke-width':1.1},defs:`<linearGradient id="sfg" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".18"/></linearGradient><linearGradient id="sfg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient>`},
 ];
 const BGS=[{name:'Plain'},{name:'Light'},{name:CFG.theme.calm?'Smoke':'Caustics'},{name:'Bokeh'}];
-const go=(k,v)=>{const s={p:PALI,b:BGI,s:SFI,a:PAI,c:BCI,g:GRI,t:STI,f:FRI};s[k]=v;const h=`p${s.p}c${s.c}b${s.b}s${s.s}a${s.a}g${s.g}t${s.t}f${s.f}`;try{localStorage.setItem(SKEY,h)}catch(e){}location.hash=h;location.reload()};
+const go=(k,v)=>{const s={p:PALI,b:BGI,s:SFI,a:PAI,c:BCI,g:GRI,t:STI,f:FRI,h:HVI,l:LBI};s[k]=v;const h=`p${s.p}c${s.c}b${s.b}s${s.s}a${s.a}g${s.g}t${s.t}f${s.f}h${s.h}l${s.l}`;try{localStorage.setItem(SKEY,h)}catch(e){}location.hash=h;location.reload()};
 function row(list,cur,k,cls){const r=document.createElement('div');r.className='prow '+cls;list.forEach((x,i)=>{const d=document.createElement('button');d.title=x.name;if(x.dot)d.style.background=x.dot;if(x.glyph)d.innerHTML=x.glyph;if(i===cur)d.classList.add('on');d.onclick=()=>go(k,i);r.appendChild(d)});document.getElementById('pals').appendChild(r)}
 const T=CFG.theme,SURF=null,NS='http://www.w3.org/2000/svg';
 const IC={
@@ -193,12 +193,12 @@ function frame(now){
     return out};
   ALL.forEach(it=>{
     let r=it.r0;
-    if(hovered===it)r+=lerp(CALM?22:16,CALM?7:12,e);
+    if(hovered===it){if(HVI===0)r+=lerp(CALM?22:16,CALM?7:12,e);else if(HVI===2)r+=lerp(5,3,e)}
     if(pressed===it)r*=0.82;
     if(it.toggle)r=20+(hovered===it?2:0)-(pressed===it?2:0);
     // breath: each bubble breathes at its own pace (bpm), smaller when expanded so the list stays neat
     if(it.bpm&&!it.toggle)r+=Math.sin(now/1000*it.bpm/60*Math.PI*2+it.ph)*lerp(2.6,1.2,e);
-    step(it.r,r,K.k,K.d+0.04);step(it.sel,selected===it.k?1:0,K.k+0.04,K.d);step(it.hov,hovered===it&&!it.toggle?1:0,K.k+0.04,K.d);
+    step(it.r,r,K.k,K.d+0.04);step(it.sel,selected===it.k?1:0,K.k+0.04,K.d);step(it.hov,hovered===it&&!it.toggle?1:0,HVI===1?0.03:K.k+0.04,HVI===1?0.8:K.d);
   });
   let y=TOP+PAD;
   SECTIONS.forEach((sec,si)=>{
@@ -214,7 +214,7 @@ function frame(now){
     const ov=(want-d)*(CALM?0.18:0.45);const ma=a.r.x*a.r.x,mb=b.r.x*b.r.x,wa=mb/(ma+mb),wb=ma/(ma+mb);
     if(hovered!==a){a.vu-=nu*ov*wa;a.vy-=ny*ov*wa}if(hovered!==b){b.vu+=nu*ov*wb;b.vy+=ny*ov*wb}}
   ALL.forEach(it=>{const dmp=CALM?0.6:0.74;it.vu*=dmp;it.vy*=dmp;it.pu+=it.vu;it.py+=it.vy;const lim=lerp(CALM?46:30,9,e);it.pu=clamp(it.pu,it.ru-lim,it.ru+lim);
-    if(it.toggle)it.u=it.pu;else it.u=it.pu+(hovered===it?Math.max(0,it.r.x-(X0-8))*(1-e):0);it.cy=it.py});
+    if(it.toggle)it.u=it.pu;else it.u=it.pu+(hovered===it&&HVI===0?Math.max(0,it.r.x-(X0-8))*(1-e):0);it.cy=it.py});
   let maxX=0;
   SECTIONS.forEach(sec=>{
     const pts=[];const m=sec.items[0].toggle?0:M;sec.m=m;
@@ -230,7 +230,7 @@ function frame(now){
       const ink=(!it.toggle&&it.sel.x>0.5)?T.accentInk:(it.hov.x>0.5?T.hoverInk:T.ink);
       it.icon.setAttribute('stroke',ink);if(it.text)it.text.setAttribute('fill',ink);if(it.st)it.st.setAttribute('fill',ink);if(it.si)it.si.setAttribute('stroke',ink);
       const cy=it.cy,left=X0+it.u-it.r.x-sec.m,right=X0+it.u+it.r.x+sec.m,cx=(left+right)/2;
-      const colLab=it.toggle?0:(1-e)*clamp((it.r.x-30)/10,0,1);
+      const colLab=(it.toggle||LBI)?0:(1-e)*clamp((it.r.x-30)/10,0,1);if(LBI===2&&hovered===it&&!it.toggle&&e<0.5)TIP.it=it;
       const ix=it.toggle?cx-9:lerp(cx-9,left+16,e);
       it.icon.setAttribute('transform',`translate(${ix},${cy-9-9*colLab}) scale(.9)`+(it.toggle?` rotate(${180*(1-e)} 10 10)`:''));
       if(it.text){if(e<0.5){it.text.setAttribute('text-anchor','middle');it.text.setAttribute('x',cx);it.text.setAttribute('y',cy+11);it.text.setAttribute('font-size',12);it.text.style.opacity=colLab}
@@ -240,7 +240,7 @@ function frame(now){
       if(it.bc){const bx=lerp(cx+it.r.x*0.72,right-18-10,e),by=lerp(cy-it.r.x*0.72,cy,e);it.bc.setAttribute('cx',bx);it.bc.setAttribute('cy',by);it.bt.setAttribute('x',bx);it.bt.setAttribute('y',by+0.5)}
     });
   });
-  if(PRIM)PRIM(e,X0,M,now);
+  if(PRIM)PRIM(e,X0,M,now);TIPF(e,X0,M);
   // content follows the sidebar's resting width (not hover), so the page never jitters
   const restRight=L+PAD+26+M+20+M+PAD;sbRight+=(restRight-sbRight)*0.2;
   document.getElementById('content').style.left=(sbRight+30)+'px';
@@ -383,14 +383,14 @@ function addNode(g,o){
 function drawFoam(now){
   NODES.forEach(n=>{
     let r=n.r0;if(now<n.born)r=0;if(n.dying)r=0;
-    if(hoverN===n)r*=n.big?1.04:1.12;if(pressN===n)r*=0.92;
+    if(hoverN===n)r*=HVI===1?1:HVI===2?(n.big?1.02:1.05):(n.big?1.04:1.12);if(pressN===n)r*=0.92;
     if(n.bpm){const ph=(now/1000*n.bpm/60)%1;const s=ph<0.4?ph/0.4:ph<0.5?1:1-(ph-0.5)/0.5;const e=s<.5?2*s*s:1-Math.pow(-2*s+2,2)/2;n.breath=e;r*=(n.big?0.9:0.95)+(n.big?0.1:0.05)*e}
-    if(!n.slice)step(n.r,r,K.k*0.8,K.d+0.08);step(n.hov,hoverN===n&&!n.isOn?1:0,K.k+0.04,K.d);step(n.on,n.isOn?1:0,K.k+0.04,K.d);
+    if(!n.slice)step(n.r,r,K.k*0.8,K.d+0.08);step(n.hov,hoverN===n&&!n.isOn?1:0,HVI===1?0.03:K.k+0.04,HVI===1?0.8:K.d);step(n.on,n.isOn?1:0,K.k+0.04,K.d);
     // pressure: hold to fill with light; breathing bubbles glow on each inhale
     if(n.holdable){n.hold=clamp(n.hold+(pressN===n?0.012:-0.02),0,1);if(n.hold>=1&&!n.fired){n.fired=1;n.onHold&&n.onHold(n)}if(n.hold<=0)n.fired=0}
     const at=Math.max(n.hold,(n.bpm?0.25+0.55*(n.breath||0):0),hoverN===n&&n.big?0.35:0);step(n.aura,at,0.08,0.7);
   });
-  NODES.forEach(n=>{if(n.follow&&n.follow.h.r.x>1){const H=n.follow.h,d=(H.r.x+n.r.x)*0.86;n.u=Math.cos(n.follow.ang)*d;n.y=H.y+Math.sin(n.follow.ang)*d}
+  NODES.forEach(n=>{if(n.follow&&n.follow.h.r.x>1){const H=n.follow.h,d=(H.r.x+n.r.x)*(CALM?0.9:0.86),ang=n.follow.ang+(CALM?0.1*Math.sin(now/1000*0.13+n.follow.ang*4):0);n.u=Math.cos(ang)*d;n.y=H.y+Math.sin(ang)*d}
     if(n.dock&&n.dock.h.r.x>1){n.y=n.dock.h.y+n.dock.h.r.x+n.dock.dy}
     if(n.slice){const h=n.slice,R=h.r.x;n.line=h.y+R*(0.56-0.07*n.hov.x-0.04*(pressN===n?1:0));h.cutAt=n.line;n.u=h.u;n.y=(n.line+h.y+R)/2+2;n.r.x=Math.max(1,(h.y+R-n.line)/2)}});
   GROUPS.forEach(g=>g.nodes.forEach(n=>{
@@ -426,7 +426,7 @@ function build(k){
   if(P.hero){
     const R=P.hero.r||(P.sat&&P.rows?130:150);const lone=!P.sat&&!P.rows;
     const CH=CT.clientHeight||760,blockH=2*R+(P.action&&STI===0?64:0);const top=Math.max(150,150+(CH-150-40-blockH)/2-10);
-    const hx0=lone?w/2-20:56+R+30;const g=addGroup({cx:hx0,M:0});
+    const extR=P.sat?Math.max(...P.sat.map(s=>{const a=(s.ang??0)*Math.PI/180,rr=s.r||66;return Math.cos(a)*(R+rr)*0.86+rr})):R;const hx0=lone?w/2-20:(!P.rows?(w-40)/2-(extR-R)/2:56+R+30);const g=addGroup({cx:hx0,M:0});
     const isStart=P.action&&/^Start$/.test(P.action.l);
     const h=hero(g,{y:top+R+10,r0:R,num:P.hero.n,unit:P.hero.unit,unit2:P.hero.unit2,bpm:P.hero.bpm,holdable:!!P.hero.hold,
       onHold:()=>{if(P.hero.hold)P.hero.hold(h)},click:P.hero.click?()=>P.hero.click(h):(isStart&&STI===0?null:null)});curHero=h;
@@ -440,7 +440,7 @@ function build(k){
       else if(STI===2){const ang=(P.action.ang??138)*Math.PI/180,rr=52;const n=bubble(g,{a:P.action.l,b:'',u:Math.cos(ang)*(R+rr)*0.86,y:top+R+10+Math.sin(ang)*(R+rr)*0.86,r0:rr,delay:520,isOn:true,click:act});n.follow={h,ang};n.isStartSat=1;n.isAct=1}
       else{const ag=addGroup({cx:hx0,M:R*0.55-26});const an=addNode(ag,{u:0,y:top+2*R+10+16,r0:26,delay:420,isOn:true,click:act,html:`<div class="lab">${P.action.l}</div>`});an.dock={h,dy:an.y-h.y-R};an.isAct=1}}
     if(P.rows){const ext=P.sat?Math.max(...P.sat.map((s,i)=>{const a=(s.ang??(-40+i*48))*Math.PI/180,rr=s.r||66;return Math.cos(a)*(R+rr)*0.86+rr})):R;
-      const lx=hx0+ext+56,lw=Math.max(260,w-lx-48),ly=top+10+R-((P.rows.length*27*2*0.86+27*0.28+12)/2)-0;secLabel(lx+12,ly-22,P.rowsTitle||'');list(lx,ly,lw,P.rows,300,true)}
+      const lx=hx0+ext+56,lw=Math.max(240,Math.min(360,w-lx-56)),ly=top+10+R-((P.rows.length*27*2*0.86+27*0.28+12)/2)-0;secLabel(lx+12,ly-22,P.rowsTitle||'');list(lx,ly,lw,P.rows,300,true)}
     }else if(P.stats){
     const n=P.stats.length,g=addGroup({cx:0,M:0});let x=40;
     const mR=Math.max(...P.stats.map(s=>s.r||90));P.stats.forEach((s,i)=>{const r=s.r||90;x+=r;addNode(g,{u:x,y:top+20+mR,r0:r,num:s.n,numH:s.h||Math.round(r*0.62),html:`<div class="unit">${s.l}</div>`,delay:i*120,click:s.go?()=>select(s.go):null});x+=r*0.72});
@@ -493,6 +493,13 @@ if((CFG.pals||[]).length>1)row(CFG.pals.map(p=>({name:p.name,glyph:'',dot:`linea
 
 
 
+
+/* ---- collapsed: a quiet name label to the right of the bubble ---- */
+const TIP={it:null,s:sp(0),g:null};
+function TIPF(e,X0,M){if(LBI!==2)return;if(!TIP.g){TIP.g=el('g',{'pointer-events':'none',opacity:0},GI);TIP.r=el('rect',{rx:15,height:30,fill:T.hover},TIP.g);TIP.t=el('text',{'font-size':13,fill:T.hoverInk,'dominant-baseline':'central'},TIP.g)}
+  const it=TIP.it,on=it&&hovered===it&&e<0.5;step(TIP.s,on?1:0,CALM?0.05:0.12,CALM?0.75:0.6);if(on&&TIP.t.textContent!==it.l){TIP.t.textContent=it.l;TIP.w=TIP.t.getComputedTextLength()+28}
+  if(it){const x=X0+it.u+it.r.x+10+8*(1-TIP.s.x),y=it.cy;TIP.r.setAttribute('x',x);TIP.r.setAttribute('y',y-15);TIP.r.setAttribute('width',TIP.w||80);TIP.t.setAttribute('x',x+14);TIP.t.setAttribute('y',y)}
+  TIP.g.setAttribute('opacity',TIP.s.x.toFixed(3));if(!on&&TIP.s.x<0.01)TIP.it=null}
 /* ---- primary action variants: A seed · B bud · E cluster ---- */
 let PRIM=null;
 (function(){if(!PAI||CFG.noPrim)return;const it=CFG.sections[0].items[0];const sec=SECTIONS[1];
@@ -531,6 +538,8 @@ let PRIM=null;
 row(['Glow','Mesh','Tide','Ripple','Sunrise','Flat','Inner circle','Level','Micro-foam','Count'].map((n,i)=>({name:'Hero · '+n,glyph:['G','M','T','R','S','—','◉','▂','∴','⋯'][i]})),GRI,'g','sq');
 row(['Petal below','Slice inside'].map((n,i)=>({name:'Action · '+n,glyph:['▁','◒'][i]})),STI,'t','');
 row(['No frame','Framed stage'].map((n,i)=>({name:n,glyph:['—','▢'][i]})),FRI,'f','sq');
+row(['Inflate','Tint','Inhale'].map((n,i)=>({name:'Hover · '+n,glyph:['⬤','◐','○'][i]})),HVI,'h','');
+row(['Name inside','No name','Name beside'].map((n,i)=>({name:'Collapsed · '+n,glyph:['▣','—','▸'][i]})),LBI,'l','sq');
 if(!CFG.noPrim)row(['Row','A · Seed','B · Bud','E · Cluster'].map((n,i)=>({name:n,glyph:['—','A','B','E'][i]})),PAI,'a','');
 /* ---- background ---- */
 (function(){const cv=document.getElementById('bgfx'),cx=cv.getContext('2d');if(!BGI&&!T.grain)return;
