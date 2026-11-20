@@ -132,7 +132,7 @@ function step(s,t,k=0.14,d=0.6){s.v=(s.v+(t-s.x)*k)*d;s.x+=s.v}
 const GLASS=T.mode==='glass',CALM=!!T.calm;
 const K=CALM?{k:0.06,d:0.58}:{k:0.12,d:0.64}; // glass = slower, calmer
 
-let expanded=!/k1/.test(HSRC),eS=sp(/k1/.test(HSRC)?0:1),hovered=null,pressed=null,selected=CFG.start;
+let HSTART=0;let expanded=!/k1/.test(HSRC),eS=sp(/k1/.test(HSRC)?0:1),hovered=null,pressed=null,selected=CFG.start;
 const SECTIONS=[{h:null,items:[{k:'toggle',l:'',ic:'side',toggle:true}]}].concat(CFG.sections);
 const GI=document.getElementById('items'),GB=document.getElementById('bags');
 let n=0;
@@ -156,7 +156,7 @@ SECTIONS.forEach(sec=>{
       if(it.slot.t==='badge'){const bg=el('g',{'pointer-events':'none'},GI);it.bc=el('circle',{r:10,fill:T.badge},bg);it.bt=el('text',{'font-size':11,'font-weight':500,fill:T.badgeInk,'text-anchor':'middle'},bg);it.bt.textContent=it.slot.v;it.badgeG=bg}
     }
     it.r=sp(it.r0);it.pu=0;it.py=null;it.vu=0;it.vy=0;it.cy=0;it.u=0;it.sel=sp(0);it.hov=sp(0);it.ph=Math.random()*6;
-    it.cell.addEventListener('pointerenter',()=>hovered=it);
+    it.cell.addEventListener('pointerenter',()=>{if(hovered!==it)HSTART=performance.now();hovered=it});
     it.cell.addEventListener('pointerleave',()=>{if(hovered===it)hovered=null;if(pressed===it)pressed=null});
     it.cell.addEventListener('pointerdown',()=>pressed=it);
     it.cell.addEventListener('pointerup',()=>{if(pressed!==it)return;pressed=null;if(it.toggle){expanded=!expanded;return}select(it.k)});
@@ -193,7 +193,11 @@ function frame(now){
     return out};
   ALL.forEach(it=>{
     let r=it.r0;
-    if(hovered===it){if(HVI===0)r+=lerp(CALM?22:16,CALM?7:12,e);else if(HVI===2)r+=lerp(5,3,e);else if(HVI===3)r+=lerp(13,6,e)}
+    if(hovered===it){if(HVI===0)r+=lerp(CALM?22:16,CALM?7:12,e);else if(HVI===2)r+=lerp(5,3,e);else if(HVI===3)r+=lerp(13,6,e);
+      else if(HVI===4)r+=lerp(12,5,e);else if(HVI===5)r+=lerp(9,4,e)+lerp(4,2,e)*Math.sin((now-HSTART)/1000*Math.PI*2*0.12);else if(HVI===6)r+=lerp(16,7,e)}
+    else if(hovered&&!hovered.toggle&&hovered.sec===it.sec&&!it.toggle){const d=Math.abs(it.sec.items.indexOf(it)-it.sec.items.indexOf(hovered)),el=(now-HSTART)/1000;
+      if(HVI===4)r+=lerp(6,3,e)*Math.pow(0.55,d-1)*clamp((el-d*0.18)/0.5,0,1);
+      if(HVI===6)r-=lerp(4,2,e)*(d===1?1:0.4)}
     if(pressed===it)r*=0.82;
     if(it.toggle)r=20+(hovered===it?2:0)-(pressed===it?2:0);
     // breath: each bubble breathes at its own pace (bpm), smaller when expanded so the list stays neat
@@ -494,6 +498,8 @@ if(T.glow){document.getElementById('sbdefs').insertAdjacentHTML('beforeend',`<fi
 
 
 
+/* demo: walk the hover through the items so options can be compared side by side */
+if(/d1/.test(HSRC)){const L=ALL.filter(i=>!i.toggle);let k=2,on=false;setInterval(()=>{on=!on;if(on){hovered=L[k%L.length];HSTART=performance.now();if(LBI===2&&!expanded)TIP.it=hovered;k+=1}else hovered=null},1600)}
 /* ---- collapsed: a quiet name label to the right of the bubble ---- */
 const TIP={it:null,s:sp(0),g:null};
 function TIPF(e,X0,M){if(LBI!==2)return;if(!TIP.g){TIP.g=el('g',{'pointer-events':'none',opacity:0},GI);TIP.r=el('rect',{rx:15,height:30,fill:T.hover},TIP.g);TIP.t=el('text',{'font-size':13,fill:T.hoverInk,'dominant-baseline':'central'},TIP.g)}
