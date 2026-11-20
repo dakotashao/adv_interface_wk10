@@ -32,7 +32,7 @@ const ERA={'1700s':CENT,
   '18th':['20th','19th','18th','17th','16th','15th','14th','11–13th','6–10th','1–5th','5th bce','older']};
 const quartOf=l=>{l=((l%360)+360)%360;return l<90?0:l<180?1:l<270?2:3};
 let P=[];fetch('objs.json').then(r=>r.json()).then(d=>P=d);
-const cnt=(h,c)=>P.filter(p=>HEMI[h].q.includes(quartOf(p.lon))&&(c==null||p.cen===c)).length;
+const cnt=(h,c)=>P.filter(p=>HEMI[h].q.includes(quartOf(p.lon))&&(c==null||p.cen===c)).length;   // c omitted: the whole hemisphere
 
 // state mirrored from the world
 let hemi=0,cen=-1,level=0,hv=null,hvH=null,lastAct=0;
@@ -193,13 +193,19 @@ function barRail(){const p=prog('r'),[tx,ty]=TGR();let o=toggleMark(tx,ty,EXP.r.
   o+=E_('line',{x1:tx,y1:ty-5-(ty-5)*p,x2:tx,y2:ty+5+(H()-ty-5)*p,class:'ln','stroke-opacity':.28});
   if(opt.bar==='plate'&&p>.85)for(let i=0;i<CENT.length-1;i++)for(let k=1;k<5;k++){const y=RY(i)+(RY(i+1)-RY(i))*k/5;o+=E_('line',{x1:tx,y1:y,x2:tx+3,y2:y,class:'ln','stroke-opacity':.3*(p-.85)/.15})}
   return o}
+
+// a hemisphere icon is the globe as the world draws it (0° to the right, 90°E below, 180° left, 90°W above), its half filled in
+function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=5,on=i===hemi,a0=c-Math.PI/2,a1=c+Math.PI/2,f=fzT(i);
+  return E_('g',f,E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.9:.45})
+    +E_('path',{d:`M${x} ${y}L${(x+r*Math.cos(a0)).toFixed(2)} ${(y+r*Math.sin(a0)).toFixed(2)}A${r} ${r} 0 0 1 ${(x+r*Math.cos(a1)).toFixed(2)} ${(y+r*Math.sin(a1)).toFixed(2)}Z`,fill:'var(--ink)','fill-opacity':on?.9:.4}))}
 const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
 function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
   const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
   const want=opt.lines==='full'?1:opt.lines==='hover'?(busy?1:0):0;G.a=sp(G.a??0,want,want?.09:.04);
   const pr=prog('r'),pt=prog('t');o+=barTop()+barRail();
   const fol=opt.bar==='folio'?{style:'font-size:10px;letter-spacing:.16em'}:{};
-  HEMI.forEach((m,i)=>{const x=TX(m.c),y=TYx(x);HP[i]=[x,y];const no=cl((pt-.3-Math.abs(x-TGT()[0])/W()*.5)/.25);o+=barMark(x,y,3,i===hemi,'h');o+=E_('text',{x,y:y+24,'text-anchor':'middle',class:i===hemi?'on':'',opacity:i===hemi||i===hvH?1:Math.max(.4,no),...fol,...fzT(i)},capT(m.n))});
+  HEMI.forEach((m,i)=>{const x=TX(m.c),y=TYx(x);HP[i]=[x,y];const no=cl((pt-.3-Math.abs(x-TGT()[0])/W()*.5)/.25);o+=hemiIcon(x,y,i);const ta=i===hvH?1:no;   // collapsed: only the icon; open (or pointing): its name and count
+    if(ta>.01)o+=E_('text',{x,y:y+24,'text-anchor':'middle',class:i===hemi?'on':'',opacity:ta,...fol,...fzT(i)},capT(m.n)+(no>.5?`<tspan class="sm" dx="5">${cnt(i)}</tspan>`:''))});
   const rowOn=i=>cl((pr-.15-i/CENT.length*.6)/.2);
   // every row keeps its name, collapsed or open, so focus is always visible: sharp at the chosen century, softer and fainter away from it
   CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),k=n?2+n/mx*2.5:1.2,rx=RX(i),ro=rowOn(i);
