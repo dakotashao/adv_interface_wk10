@@ -209,7 +209,7 @@ function frame(now){
     if(CSI===3&&CLK&&!it.toggle){const d=Math.abs(it.py-CLK.cy)/60,s=clamp(((now-CLK.t)/1000-d*0.09)/0.7,0,1);r+=lerp(7,4,e)*Math.sin(Math.PI*s)}
     if(it.toggle)r=20+(hovered===it?2:0)-(pressed===it?2:0);
     // breath: each bubble breathes at its own pace (bpm), smaller when expanded so the list stays neat
-    if(it.bpm&&!it.toggle)r+=Math.sin(now/1000*it.bpm/60*Math.PI*2+it.ph)*lerp(2.6,1.2,e);
+    if(it.bpm&&!it.toggle)r+=Math.sin(now/1000*Math.min(it.bpm,8)/60*Math.PI*2+it.ph)*lerp(2.6,1.2,e);
     step(it.r,r,K.k,K.d+0.04);{let tg=selected===it.k?1:0;if(CSI===2&&CLK&&!it.toggle){const L=ALL.filter(x=>!x.toggle),i0=L.findIndex(x=>x.k===CLK.from),i1=L.findIndex(x=>x.k===CLK.k),me=L.indexOf(it);
         const dur=(CALM?340:220)*Math.abs(i1-i0)+200,pr=clamp((now-CLK.t)/dur,0,1),ez=pr<.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2,pos=i0+(i1-i0)*ez;
         it.pass=pr<1?Math.exp(-Math.pow(pos-me,2)*2.2):0;if(it.k===CLK.k&&pr<0.97)tg=0;if(it.k===CLK.from&&pr<0.04)tg=1}else it.pass=0;
@@ -409,7 +409,7 @@ function drawFoam(now){
   NODES.forEach(n=>{
     let r=n.r0;if(now<n.born)r=0;if(n.dying)r=0;
     if(hoverN===n)r*=HVI===1?1:HVI===2?(n.big?1.02:1.05):HVI===3?(n.big?1.03:1.08):(n.big?1.04:1.12);if(pressN===n)r*=0.92;
-    if(n.bpm){const ph=(now/1000*n.bpm/60)%1;const s=ph<0.4?ph/0.4:ph<0.5?1:1-(ph-0.5)/0.5;const e=s<.5?2*s*s:1-Math.pow(-2*s+2,2)/2;n.breath=e;r*=(n.big?0.9:0.95)+(n.big?0.1:0.05)*e}
+    if(n.bpm){const ph=(now/1000*(SESSION?n.bpm:Math.min(n.bpm,8))/60)%1;const s=ph<0.4?ph/0.4:ph<0.5?1:1-(ph-0.5)/0.5;const e=s<.5?2*s*s:1-Math.pow(-2*s+2,2)/2;n.breath=e;r*=(n.big?0.9:0.95)+(n.big?0.1:0.05)*e}
     if(!n.slice)step(n.r,r,K.k*0.8,K.d+0.08);step(n.hov,hoverN===n&&!n.isOn?1:0,HVI===1||HVI===3?0.03:K.k+0.04,HVI===1||HVI===3?0.8:K.d);step(n.on,n.isOn?1:0,K.k+0.04,K.d);
     // pressure: hold to fill with light; breathing bubbles glow on each inhale
     if(n.holdable){n.hold=clamp(n.hold+(pressN===n?0.012:-0.02),0,1);if(n.hold>=1&&!n.fired){n.fired=1;n.onHold&&n.onHold(n)}if(n.hold<=0)n.fired=0}
