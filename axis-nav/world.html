@@ -690,7 +690,9 @@ applyTheme();
 render();requestAnimationFrame(frame);
 
 // bare: the page runs without its own bars, so another page can lay a navigation over it and drive it
-if(new URLSearchParams(location.search).has('bare')){document.body.classList.add('bare');window.__P=()=>P;window.__H=()=>hover||focus;   // the piece under the pointer (or held), so the bars can show where and when it is
+if(new URLSearchParams(location.search).has('bare')){document.body.classList.add('bare');window.__P=()=>P;window.__H=()=>hover||focus;
+window.__Q=(h,i)=>{if(h!==undefined)hovQ=h;if(i!==undefined)isoQ=i;render();return[hovQ,isoQ,level]};   // the overlay's material bar drives these
+   // the piece under the pointer (or held), so the bars can show where and when it is
    // the overlay reads the pieces (and their sampled colours) from here
 
   addEventListener('message',e=>{const d=e.data||{};

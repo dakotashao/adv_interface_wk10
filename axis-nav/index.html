@@ -19,7 +19,7 @@ svg#geo .ln{stroke:var(--ink);fill:none;stroke-width:1}
 #pick button.on{color:var(--ink);font-style:normal}
 #pick .sub{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:8px;border-top:1px solid rgba(28,27,24,.12)}
 </style></head><body>
-<iframe id="world" src="world.html?bare&v=1795224259#paper"></iframe>
+<iframe id="world" src="world.html?bare&v=1795224513#paper"></iframe>
 <svg id="geo"></svg>
 <div class="hit" id="hitTop"></div><div class="hit" id="hitRail"></div>
 <div id="pick"></div>
@@ -51,7 +51,7 @@ drawPick();
 // geometry
 const G={init:0};const sp=(a,b,k)=>a+(b-a)*k;const E_=(t,a,i)=>`<${t} ${Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ')}>${i||''}</${t}>`;
 const W=()=>innerWidth,H=()=>innerHeight;
-const RY=i=>{const top=120,bot=H()-120;return top+(bot-top)*(i+.5)/CENT.length};
+const RY=i=>{const top=120,bot=H()-250;  /* the lower part of the rail holds the four materials */return top+(bot-top)*(i+.5)/CENT.length};
 const TX=l=>W()/2-230+((l+135+360)%360)/360*460;   // hemisphere centres evenly along the top
 const lab=i=>ERA[opt.era][i];
 let HP=[];
@@ -99,8 +99,24 @@ let lastStep=0;function goCen(i){if(i===cen)return;lastAct=performance.now();cen
 
 // ---- linked: pointing at a piece in the world lights up its century on the rail and its longitude on the top bar
 let LH=null;function linked(){try{const p=world.contentWindow.__H&&world.contentWindow.__H();LH=p&&hv===null&&hvH===null?{c:p.cen,lon:p.lon}:null}catch(_){LH=null}}
+
+// ---- what: the four material quadrants live at the foot of the rail, only inside the cube.
+// each is the same small circle, cut by a cross, with its own quarter hatched (top = rigid, left = transformed)
+const QN=['Rigid · Transformed','Rigid · Formed','Flexible · Transformed','Flexible · Formed'];
+const QY=k=>H()-200+k*38;let hvQ=null,isoQ=null,wLevel=0;
+function qGlyph(x,y,k,on){const r=6,sx=k%2?1:-1,sy=k<2?-1:1;
+  return E_('path',{d:`M${x} ${y}L${x+sx*r} ${y}A${r} ${r} 0 0 ${sx*sy>0?1:0} ${x} ${y+sy*r}Z`,fill:'url(#hatch)'})
+    +E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.95:.6})+E_('path',{d:`M${x-r} ${y}H${x+r}M${x} ${y-r}V${y+r}`,class:'ln','stroke-opacity':.35,'stroke-width':.6})}
+function matBar(){let st;try{st=world.contentWindow.__Q()}catch(_){return''}isoQ=st[1];wLevel=st[2];if(!wLevel)return'';
+  const x0=RXB(),pr=prog('r'),A=wP().filter(p=>inH(p,hemi)&&p.cen===cen);let o='';
+  QN.forEach((nm,k)=>{const y=QY(k),on=isoQ===k,h=hvQ===k,n=A.filter(p=>p.mat===k).length,op=isoQ!=null&&!on?.35:1;
+    o+=E_('g',{opacity:op},qGlyph(x0,y,k,on||h));
+    if(pr>.5||h||on){let mats='';try{mats=world.contentWindow.matsNow(k)||''}catch(_){}
+      o+=E_('text',{x:x0+16,y:y-2,class:on?'on':'',opacity:h||on?1:.75},nm)+E_('text',{x:x0+16,y:y+12,class:'sm'},n?(mats&&mats!=='—'?mats+'  ':'')+'▯×'+n:'—')}});
+  return o+ringMotion(MS.mat,isoQ,k=>[x0,QY(k)],'v')+touch(hvQ!==null&&hvQ!==isoQ?[x0,QY(hvQ)]:null,'q')}
+function pickQ(e){if(!wLevel)return null;let b=null,bd=1e9;QN.forEach((_,k)=>{const d=Math.abs(QY(k)-e.clientY);if(d<bd){bd=d;b=k}});return bd<16&&e.clientX<RXB()+200?b:null}
 // ---- bar motion: how the chosen ring gets from the old item to the new one
-const MS={top:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},rail:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]}};
+const MS={mat:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},top:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},rail:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]}};
 let pressT=-1e9;addEventListener('mousedown',()=>pressT=performance.now());
 const cl=v=>Math.max(0,Math.min(1,v)),eo=t=>1-Math.pow(1-t,3);
 function arcPath(cx,cy,r,a0,len){if(len<=0.001||r<=0)return'';len=Math.min(len,Math.PI*2-.0001);const x1=cx+r*Math.cos(a0),y1=cy+r*Math.sin(a0),x2=cx+r*Math.cos(a0+len),y2=cy+r*Math.sin(a0+len);
@@ -232,6 +248,7 @@ function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.ma
   o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
   if(LH){const lx=TX(LH.lon),ly=TYx(lx);o+=E_('line',{x1:lx,y1:ly-6,x2:lx,y2:ly+6,class:'ln','stroke-opacity':.85})+E_('circle',{cx:lx,cy:ly,r:2,fill:'var(--ink)'});   // exactly where it was made
     o+=touch([RX(LH.c),RY(LH.c)],'r')}
+  o+=matBar();
   o+=touch(hvH!==null&&hvH!==hemi?[TX(HEMI[hvH].c),TYx(TX(HEMI[hvH].c))]:null,'t')+touch(hv!==null&&hv!==cen?[RX(hv),RY(hv)]:null,'r');
   // the answer: a ring around the pieces that are both here and then, a small ring on each, lines from both bars meeting on it
   const T=cluster(hemi,cen>=0?cen:null),a=G.a,pa=opt.lines==='point'?1:a;
@@ -243,7 +260,7 @@ function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.ma
     return E_('line',{x1:sx,y1:sy,x2:ex,y2:ey,class:'ln','stroke-opacity':.25,'stroke-dasharray':'1 5'})+shape(K,.28,'1 4',[[ex,ey]])};
   if(hv!==null&&hv!==cen)o+=prev(hemi,hv,RX(hv)+12,RY(hv));
   if(hvH!==null&&hvH!==hemi)o+=prev(hvH,cen>=0?cen:null,TX(HEMI[hvH].c),ay);
-  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:(RY(0)-56)+'px',width:(RXB()+170)+'px',height:(RY(CENT.length-1)-RY(0)+76)+'px'});
+  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:(RY(0)-56)+'px',width:(RXB()+200)+'px',height:(H()-RY(0)+16)+'px'});
   return o}
 
 // ---- Ruler
@@ -277,11 +294,11 @@ function pickRow(e){
   let b=null,bd=1e9;CENT.forEach((_,i)=>{const d=Math.abs(RY(i)-e.clientY);if(d<bd){bd=d;b=i}});return bd<22?b:null}
 function pickH(e){let b=null,bd=1e9;HP.forEach(([x],i)=>{const d=Math.abs(e.clientX-x);if(d<bd){bd=d;b=i}});return bd<60?b:null}
 const hr=document.getElementById('hitRail'),ht=document.getElementById('hitTop');
-hr.onmousemove=e=>{const r=pickRow(e);if(r!==hv){hv=r;send({t:'hov',c:r})}};hr.onmouseleave=()=>{hv=null;hotT=null;send({t:'hov',c:null})};
+hr.onmousemove=e=>{const q=pickQ(e);if(q!==hvQ){hvQ=q;try{world.contentWindow.__Q(q)}catch(_){}}if(q!==null){if(hv!==null){hv=null;send({t:'hov',c:null})}return}const r=pickRow(e);if(r!==hv){hv=r;send({t:'hov',c:r})}};hr.onmouseleave=()=>{hv=null;hotT=null;if(hvQ!==null){hvQ=null;try{world.contentWindow.__Q(null)}catch(_){}}send({t:'hov',c:null})};
 const nearTg=(e,k)=>{if(opt.nav==='ruler')return false;const [x,y]=k==='r'?TGR():TGT();return Math.hypot(e.clientX-x,e.clientY-y)<14};
 const flip=k=>{const E=EXP[k];E.on=E.on?0:1;E.t0=performance.now()};   // one bar at a time
 hr.addEventListener('mousemove',e=>{hotT=nearTg(e,'r')?'r':null});ht.addEventListener('mousemove',e=>{hotT=nearTg(e,'t')?'t':hotT==='t'?null:hotT});
-hr.onclick=e=>{if(nearTg(e,'r')){flip('r');return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
+hr.onclick=e=>{if(nearTg(e,'r')){flip('r');return}const q=pickQ(e);if(q!==null){try{world.contentWindow.__Q(undefined,isoQ===q?null:q)}catch(_){}return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
 hr.addEventListener('wheel',e=>{e.preventDefault();const now=performance.now();if(now-lastStep<160)return;lastStep=now;const dir=e.deltaY>0?1:-1;let i=(cen<0?(dir>0?-1:CENT.length):cen)+dir;
   while(i>=0&&i<CENT.length&&!full(i))i+=dir;if(i>=0&&i<CENT.length)goCen(i)},{passive:false});
 let dragging=false,dragged=false;hr.addEventListener('mousedown',e=>{if(!nearTg(e,'r')){dragging=true;dragged=false}});
