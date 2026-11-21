@@ -19,7 +19,7 @@ svg#geo .ln{stroke:var(--ink);fill:none;stroke-width:1}
 #pick button.on{color:var(--ink);font-style:normal}
 #pick .sub{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:8px;border-top:1px solid rgba(28,27,24,.12)}
 </style></head><body>
-<iframe id="world" src="world.html?bare&v=1795222573#paper"></iframe>
+<iframe id="world" src="world.html?bare&v=1795223467#paper"></iframe>
 <svg id="geo"></svg>
 <div class="hit" id="hitTop"></div><div class="hit" id="hitRail"></div>
 <div id="pick"></div>
@@ -74,7 +74,7 @@ const FOCUS=d=>Math.max(0,Math.min(.55,(Math.abs(d)-.15)*.2));
 const HATCH='<pattern id="hatch" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="#1c1b18" stroke-width=".7"/></pattern>';
 const FZ={};const DEFS='<defs>'+HATCH+[1,2,3,4,5,6,7,8].map(k=>`<filter id="b${k}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="${(k*.2).toFixed(1)}"/></filter>`).join('')+'</defs>';
 function fz(key,amt){FZ[key]=sp(FZ[key]??amt,amt,.12);const px=FZ[key]*1.1,k=Math.round(px/.2);return k<1?{}:{filter:`url(#b${Math.min(8,k)})`}}
-const fzR=i=>fz('r'+i,i===hv?0:cen<0?FOCUS(2):FOCUS((i-cen)*1.3));
+const fzR=i=>fz('r'+i,i===hv||(LH&&LH.c===i)?0:cen<0?FOCUS(2):FOCUS((i-cen)*1.3));
 const fzT=i=>{const d=Math.min(Math.abs(i-hemi),4-Math.abs(i-hemi));return fz('t'+i,i===hvH?0:FOCUS(d*2.2))};
 
 // ---- what is inside a century, before you go there: the open rail carries a colour strip, pointing shows its representative piece
@@ -96,6 +96,9 @@ function preview(){if(hv===null){PV.i=null;return''}const A=wP().filter(p=>p.cen
 const full=i=>cnt(hemi,i)>0;
 function nearestFull(i,dir){if(full(i))return i;for(let d=1;d<CENT.length;d++){const a=i+d*(dir||1),b=i-d*(dir||1);if(a>=0&&a<CENT.length&&full(a))return a;if(b>=0&&b<CENT.length&&full(b))return b}return i}
 let lastStep=0;function goCen(i){if(i===cen)return;lastAct=performance.now();cen=i;send({t:'cen',c:i})}
+
+// ---- linked: pointing at a piece in the world lights up its century on the rail and its longitude on the top bar
+let LH=null;function linked(){try{const p=world.contentWindow.__H&&world.contentWindow.__H();LH=p&&hv===null&&hvH===null?{c:p.cen,lon:p.lon}:null}catch(_){LH=null}}
 // ---- bar motion: how the chosen ring gets from the old item to the new one
 const MS={top:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},rail:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]}};
 let pressT=-1e9;addEventListener('mousedown',()=>pressT=performance.now());
@@ -221,10 +224,12 @@ function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.ma
     const d0=cen<0?2:Math.abs(i-cen),mf=i===cen||i===hv?1:Math.max(.25,1-d0*.12);   // collapsed, the marks carry the focus on their own
     o+=E_('g',{opacity:mf},cenGlyph(rx,y,n/mx,i===cen));   // one glyph for every bar: a small circle; here its hatching rises with the count, an empty century is a dashed circle
     const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),left=false,lx=rx+(i===cen?20:16);   // the chosen name steps a little further out
-    if(ro>0||i===hv)o+=E_('text',{x:lx,y:y+4,'text-anchor':left?'end':'start',...(i===cen?{style:'font-size:15px'}:{}),style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
+    const lk=LH&&LH.c===i;if(ro>0||i===hv||lk)o+=E_('text',{x:lx,y:y+4,'text-anchor':left?'end':'start',...(i===cen?{style:'font-size:15px'}:{}),style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv||lk?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
   });
   const ax=TX(HEMI[hemi].c),ay=TYx(ax)+12,bx=(cen>=0?RX(cen):x0)+12,by=cen>=0?RY(cen):null;
   o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
+  if(LH){const lx=TX(LH.lon),ly=TYx(lx);o+=E_('line',{x1:lx,y1:ly-6,x2:lx,y2:ly+6,class:'ln','stroke-opacity':.85})+E_('circle',{cx:lx,cy:ly,r:2,fill:'var(--ink)'});   // exactly where it was made
+    o+=touch([RX(LH.c),RY(LH.c)],'r')}
   o+=touch(hvH!==null&&hvH!==hemi?[TX(HEMI[hvH].c),TYx(TX(HEMI[hvH].c))]:null,'t')+touch(hv!==null&&hv!==cen?[RX(hv),RY(hv)]:null,'r');
   // the answer: a ring around the pieces that are both here and then, a small ring on each, lines from both bars meeting on it
   const T=cluster(hemi,cen>=0?cen:null),a=G.a,pa=opt.lines==='point'?1:a;
@@ -281,5 +286,5 @@ let dragging=false,dragged=false;hr.addEventListener('mousedown',e=>{if(!nearTg(
 addEventListener('mouseup',()=>dragging=false);
 hr.addEventListener('mousemove',e=>{if(!dragging)return;const r=pickRow(e);if(r!=null&&full(r)&&r!==cen){dragged=true;goCen(r)}});
 ht.onmousemove=e=>hvH=pickH(e);ht.onmouseleave=()=>hvH=null;ht.onclick=e=>{if(nearTg(e,'t')){flip('t');return}const h=pickH(e);if(h!=null){lastAct=performance.now();hemi=h;send({t:'hemi',h})}};
-function tick(){const f={construct,ruler,index}[opt.nav];document.getElementById('geo').innerHTML=DEFS+f();requestAnimationFrame(tick)}tick();
+function tick(){linked();const f={construct,ruler,index}[opt.nav];document.getElementById('geo').innerHTML=DEFS+f();requestAnimationFrame(tick)}tick();
 </script></body></html>
