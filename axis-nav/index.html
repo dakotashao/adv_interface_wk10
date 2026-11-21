@@ -203,11 +203,9 @@ function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math
   return E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'})+E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
     +E_('circle',{cx:x,cy:y,r,class:'ln'})+E_('line',{x1:p0[0].toFixed(2),y1:p0[1].toFixed(2),x2:p1[0].toFixed(2),y2:p1[1].toFixed(2),class:'ln','stroke-width':.6}))}
 
-function cenGlyph(x,y,f,on){const r=6,bg=E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'});   // a little paper under each glyph so the axis line breaks around it
-  if(f<=0)return bg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':.5,'stroke-dasharray':'1.5 2'});
-  f=Math.max(.18,Math.min(1,f));const yc=y+r-2*r*f,dy=yc-y,dx=Math.sqrt(Math.max(0,r*r-dy*dy));
-  const seg=f>=.999?E_('circle',{cx:x,cy:y,r,fill:'url(#hatch)'}):E_('path',{d:`M${(x-dx).toFixed(2)} ${yc.toFixed(2)}A${r} ${r} 0 ${f>.5?1:0} 0 ${(x+dx).toFixed(2)} ${yc.toFixed(2)}Z`,fill:'url(#hatch)'});
-  return bg+seg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.95:.6})}
+// a century is a small circle: drawn if it has pieces here, dashed if it has none; how many is left to the open state
+function cenGlyph(x,y,f,on){const r=6,bg=E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'});
+  return bg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':f>0?(on?.95:.6):.45,...(f>0?{}:{'stroke-dasharray':'1.5 2'})})}
 const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
 function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
   const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
