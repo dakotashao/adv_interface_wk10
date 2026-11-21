@@ -160,7 +160,7 @@ const TYx=x=>{const y0=40;if(!BOW())return y0;const v=(x-W()/2)/260;return y0+14
 // ---- collapsed / expanded: collapsed is only the marks; opening draws the axis out from its end circle across the whole page
 const EXP={r:{on:0,t0:-1e9},t:{on:0,t0:-1e9}};
 const prog=k=>{const e=EXP[k],t=performance.now()-e.t0;return e.on?eo(cl(t/750)):1-eo(cl(t/450))};
-const TGR=()=>[36,RY(0)-40],TGT=()=>[W()/2-290,40];
+const TGR=()=>[36,40],TGT=()=>[36,40];   // one switch where the two axes cross: the origin
 function toggleMark(x,y,on,hot){return E_('circle',{cx:x,cy:y,r:hot?4.5:3.5,class:'ln','stroke-opacity':hot?.9:.6})+(on?E_('circle',{cx:x,cy:y,r:1.4,fill:'var(--ink)'}):'')}
 let hotT=null;
 function barTop_OLD(){const y0=40,L=W()/2-250,Rr=W()/2+250,b=opt.bar;let o='';
@@ -185,13 +185,13 @@ function barMark(x,y,k,on,dir){const b=opt.bar;
       :E_('line',{x1:x,y1:y,x2:x+4+k*1.6,y2:y,class:'ln','stroke-opacity':on?1:.55})+(on?E_('path',{d:`M${x-9} ${y-3.5}L${x-9} ${y+3.5}L${x-4} ${y}Z`,fill:'var(--ink)'}):'');
   return mark(x,y,k,on)}
 
-function barTop(){const p=prog('t'),[tx,ty]=TGT();let o=toggleMark(tx,ty,EXP.t.on,hotT==='t');if(p<=.001)return o;
-  o+=E_('line',{x1:tx+5-(tx+5)*p,y1:ty,x2:tx+5+(W()-tx-5)*p,y2:ty,class:'ln','stroke-opacity':.28});
+function barTop(){const p=prog('t'),[tx,ty]=TGT();let o='';if(p<=.001)return o;
+  o+=E_('line',{x1:tx+5,y1:ty,x2:tx+5+(W()-tx-5)*p,y2:ty,class:'ln','stroke-opacity':.28});
   if(opt.bar==='plate'&&p>.85)for(let l=-135;l<=225;l+=15){const x=TX(l),maj=HEMI.some(m=>m.c===l);if(!maj)o+=E_('line',{x1:x,y1:ty,x2:x,y2:ty-3,class:'ln','stroke-opacity':.35*(p-.85)/.15})}
   if(opt.bar==='folio'&&p>.85)o+=E_('path',{d:`M${tx+5} ${ty-4}V${ty+4}`,class:'ln','stroke-opacity':.4});
   return o}
 function barRail(){const p=prog('r'),[tx,ty]=TGR();let o=toggleMark(tx,ty,EXP.r.on,hotT==='r');if(p<=.001)return o;
-  o+=E_('line',{x1:tx,y1:ty-5-(ty-5)*p,x2:tx,y2:ty+5+(H()-ty-5)*p,class:'ln','stroke-opacity':.28});
+  o+=E_('line',{x1:tx,y1:ty+5,x2:tx,y2:ty+5+(H()-ty-5)*p,class:'ln','stroke-opacity':.28});
   if(opt.bar==='plate'&&p>.85)for(let i=0;i<CENT.length-1;i++)for(let k=1;k<5;k++){const y=RY(i)+(RY(i+1)-RY(i))*k/5;o+=E_('line',{x1:tx,y1:y,x2:tx+3,y2:y,class:'ln','stroke-opacity':.3*(p-.85)/.15})}
   return o}
 
@@ -200,7 +200,7 @@ function barRail(){const p=prog('r'),[tx,ty]=TGR();let o=toggleMark(tx,ty,EXP.r.
 // directions follow the world (0° right, 90°E below, 180° left, 90°W above)
 function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math.PI/2,a1=c+Math.PI/2,f=fzT(i),
     p0=[x+r*Math.cos(a0),y+r*Math.sin(a0)],p1=[x+r*Math.cos(a1),y+r*Math.sin(a1)],op=on?.95:.5;
-  return E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
+  return E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'})+E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
     +E_('circle',{cx:x,cy:y,r,class:'ln'})+E_('line',{x1:p0[0].toFixed(2),y1:p0[1].toFixed(2),x2:p1[0].toFixed(2),y2:p1[1].toFixed(2),class:'ln','stroke-width':.6}))}
 
 function cenGlyph(x,y,f,on){const r=6,bg=E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'});   // a little paper under each glyph so the axis line breaks around it
@@ -237,7 +237,7 @@ function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((
     return E_('line',{x1:sx,y1:sy,x2:ex,y2:ey,class:'ln','stroke-opacity':.25,'stroke-dasharray':'1 5'})+shape(K,.28,'1 4',[[ex,ey]])};
   if(hv!==null&&hv!==cen)o+=prev(hemi,hv,RX(hv)+12,RY(hv));
   if(hvH!==null&&hvH!==hemi)o+=prev(hvH,cen>=0?cen:null,TX(HEMI[hvH].c),ay);
-  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:(RY(0)-56)+'px',width:'200px',height:(RY(CENT.length-1)-RY(0)+76)+'px'});
+  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:'18px',width:'200px',height:(RY(CENT.length-1)-18+20)+'px'});
   return o}
 
 // ---- Ruler
@@ -267,14 +267,14 @@ function pickH(e){let b=null,bd=1e9;HP.forEach(([x],i)=>{const d=Math.abs(e.clie
 const hr=document.getElementById('hitRail'),ht=document.getElementById('hitTop');
 hr.onmousemove=e=>{const r=pickRow(e);if(r!==hv){hv=r;send({t:'hov',c:r})}};hr.onmouseleave=()=>{hv=null;hotT=null;send({t:'hov',c:null})};
 const nearTg=(e,k)=>{if(opt.nav!=='construct')return false;const [x,y]=k==='r'?TGR():TGT();return Math.hypot(e.clientX-x,e.clientY-y)<14};
-const flip=k=>{const E=EXP[k],now=performance.now(),p=prog(k);E.on=E.on?0:1;E.t0=now-(E.on?0:0)};
+const flip=()=>{const now=performance.now(),on=EXP.r.on?0:1;['r','t'].forEach(k=>{EXP[k].on=on;EXP[k].t0=now})};   // both axes open from the origin together
 hr.addEventListener('mousemove',e=>{hotT=nearTg(e,'r')?'r':null});ht.addEventListener('mousemove',e=>{hotT=nearTg(e,'t')?'t':hotT==='t'?null:hotT});
-hr.onclick=e=>{if(nearTg(e,'r')){flip('r');return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
+hr.onclick=e=>{if(nearTg(e,'r')){flip();return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
 hr.addEventListener('wheel',e=>{e.preventDefault();const now=performance.now();if(now-lastStep<160)return;lastStep=now;const dir=e.deltaY>0?1:-1;let i=(cen<0?(dir>0?-1:CENT.length):cen)+dir;
   while(i>=0&&i<CENT.length&&!full(i))i+=dir;if(i>=0&&i<CENT.length)goCen(i)},{passive:false});
 let dragging=false,dragged=false;hr.addEventListener('mousedown',e=>{if(!nearTg(e,'r')){dragging=true;dragged=false}});
 addEventListener('mouseup',()=>dragging=false);
 hr.addEventListener('mousemove',e=>{if(!dragging)return;const r=pickRow(e);if(r!=null&&full(r)&&r!==cen){dragged=true;goCen(r)}});
-ht.onmousemove=e=>hvH=pickH(e);ht.onmouseleave=()=>hvH=null;ht.onclick=e=>{if(nearTg(e,'t')){flip('t');return}const h=pickH(e);if(h!=null){lastAct=performance.now();hemi=h;send({t:'hemi',h})}};
+ht.onmousemove=e=>hvH=pickH(e);ht.onmouseleave=()=>hvH=null;ht.onclick=e=>{if(nearTg(e,'t')){flip();return}const h=pickH(e);if(h!=null){lastAct=performance.now();hemi=h;send({t:'hemi',h})}};
 function tick(){const f={construct,ruler,index}[opt.nav];document.getElementById('geo').innerHTML=DEFS+f();requestAnimationFrame(tick)}tick();
 </script></body></html>
