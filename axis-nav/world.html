@@ -589,7 +589,8 @@ const QNAME=['Rigid · Transformed','Rigid · Formed','Flexible · Transformed',
 function labelAt(i,p,html,op,align){let el=labelsEl.children[i];if(!el){el=document.createElement('div');el.className='lb';labelsEl.appendChild(el)}el.classList.remove('mq','on');delete el.dataset.q;
   if(!p||op<.01){el.style.opacity=0;return}if(el._src!==html){el._src=html;el._k=1}el._k=(el._k||0)*(TH.fx==='ink'?.95:.92);
   if(TH.fx==='ink'){if(el._h!==html){el.innerHTML=html;el._h=html}el.style.filter='none'}   // paper: words blur and fade like ink, never break into code
-  else{el.style.filter='none';if(el._h!==html){el.innerHTML=html;el._h=html}}el.style.opacity=op;el.style.left=p[0]+'px';el.style.top=p[1]+'px';el.style.textAlign=align[2]||'left';el.style.transform=`translate(${align[0]},${align[1]})`}
+  else{el.style.filter='none';if(el._h!==html){el.innerHTML=html;el._h=html}}el.style.opacity=op;const BR=document.body.classList.contains('bare');   // with the overlay's bars on top, labels keep out of the bar bands
+  el.style.left=(BR?Math.max(p[0],84):p[0])+'px';el.style.top=(BR?Math.max(p[1],104):p[1])+'px';el.style.textAlign=align[2]||'left';el.style.transform=`translate(${align[0]},${align[1]})`}
 function frame(now){
   if(!laid&&P.length)layout();
   if(turnT<1){turnT=Math.min(1,(now-turnStart)/TURN);const t=ez(turnT);yaw=turnFrom+(turnTo-turnFrom)*t;pitch=90-62*Math.sin(Math.PI*turnT)}
