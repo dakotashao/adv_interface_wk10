@@ -137,8 +137,8 @@
   .lb b{font-weight:500;color:var(--ink)} .lb .tl{color:var(--mute);letter-spacing:.15em} .lb span{color:var(--mute)}
   #go{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);color:var(--mute);z-index:4;transition:color .2s,opacity .4s}
   #go:hover{color:var(--ink)} #go:active{opacity:.5}
-  #quad{position:fixed;right:210px;bottom:24px;display:flex;flex-direction:row-reverse;align-items:center;gap:10px;z-index:4;opacity:0;pointer-events:none;transition:opacity .4s;color:var(--ink)}
-  #quad.show{opacity:1;pointer-events:auto}#quad rect{cursor:pointer;transition:fill .2s}#quad .qn{font-style:italic;color:var(--mute);font-size:12px;white-space:nowrap}
+  #quad{position:fixed;right:140px;bottom:26px;display:flex;align-items:center;z-index:4;opacity:0;pointer-events:none;transition:opacity .4s;color:var(--ink)}
+  #quad.show{opacity:1;pointer-events:auto}#quad rect{cursor:pointer;transition:fill .2s}#quad .ring{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .55s var(--ease)}
   #views{position:fixed;right:28px;bottom:26px;display:flex;gap:16px;z-index:4;opacity:0;pointer-events:none;transition:opacity .4s}
   #views.show{opacity:1;pointer-events:auto}
   #views button{color:var(--faint);transition:color .2s,transform .15s var(--ease)}
@@ -160,7 +160,7 @@
 
   /* paper · view bar: each view is drawn as what you will see (nested frames from the front, edges from the side or top); the name lives in one caption at the left of the bar */
   body[data-theme=paper] #views{gap:6px;align-items:center}
-  body[data-theme=paper] #views .vc{font-style:italic;color:var(--mute);margin-right:10px;min-width:34px;text-align:right;transition:opacity .25s}
+  body[data-theme=paper] #views .vc{font-style:italic;color:var(--mute);margin-right:52px;min-width:34px;text-align:right;transition:opacity .25s}
   body[data-theme=paper] #views button{width:30px;height:30px;display:grid;place-items:center;color:var(--faint)}
   body[data-theme=paper] #views button svg{overflow:visible}
   body[data-theme=paper] #views button .ring{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .55s var(--ease)}
@@ -574,12 +574,17 @@ labelsEl.addEventListener('click',e=>{const el=e.target.closest('.mq');if(!el)re
 function setIso(q){isoQ=isoQ===q?null:q;if(isoQ!=null)zoomQuarter(isoQ);else{zmT=1;panXT=panYT=0}renderQuad();render()}
 // a 2×2 map of the cross beside the view bar: the same four quadrants, always in the same place
 function renderQuad(){const el=document.getElementById('quad');if(!el)return;el.classList.toggle('show',level===1);
-  if(!el.firstChild){   // built once; hovering only changes attributes, so a click is never lost to a rebuilt element
-    el.innerHTML=`<svg width="30" height="30" viewBox="-1 -1 30 30" fill="none" stroke="currentColor" stroke-width="1"><defs><pattern id="qh" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="currentColor" stroke-width=".7"/></pattern></defs>`
-      +[0,1,2,3].map(k=>`<rect class="qc" data-q="${k}" x="${(k%2)*14}" y="${(k<2?0:1)*14}" width="14" height="14"/>`).join('')+`</svg><span class="qn"></span>`;
-    el.querySelectorAll('.qc').forEach(r=>{r.onclick=()=>setIso(+r.dataset.q);r.onmouseenter=()=>{hovQ=+r.dataset.q;renderQuad();render()};r.onmouseleave=()=>{hovQ=null;renderQuad();render()}})}
-  el.querySelectorAll('.qc').forEach(r=>{const k=+r.dataset.q,on=isoQ===k,h=hovQ===k;r.setAttribute('fill',on?'url(#qh)':h?'rgba(28,27,24,.06)':'transparent');r.setAttribute('stroke-opacity',on||h?.9:.45)});
-  el.querySelector('.qn').textContent=hovQ!=null?QNAME[hovQ]:isoQ!=null?QNAME[isoQ]:''}
+  // one circle cut by the cross, the same size and line as the view icons; the held quarter is hatched and wears the compass ring
+  if(!el.firstChild){const r=6,arc=(k)=>{const sx=k%2?1:-1,sy=k<2?-1:1;return `M0 0L${sx*r} 0A${r} ${r} 0 0 ${sx*sy>0?1:0} 0 ${sy*r}Z`};
+    el.innerHTML=`<svg width="30" height="30" viewBox="-15 -15 30 30" fill="none" stroke="currentColor" stroke-width="1"><defs><pattern id="qh" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" stroke="currentColor" stroke-width=".7"/></pattern></defs>`
+      +`<circle r="6"/><path d="M-6 0H6M0 -6V6" stroke-opacity=".6"/>`+[0,1,2,3].map(k=>`<path class="qc" data-q="${k}" d="${arc(k)}" stroke="none"/>`).join('')
+      +[0,1,2,3].map(k=>{const sx=k%2?1:-1,sy=k<2?-1:1;return `<rect class="qh" data-q="${k}" x="${sx>0?0:-15}" y="${sy>0?0:-15}" width="15" height="15" fill="transparent" stroke="none"/>`}).join('')
+      +`<circle class="ring" r="10" pathLength="1" transform="rotate(-90)" stroke-opacity=".5"/></svg>`;
+    el.querySelectorAll('.qh').forEach(r=>{r.style.cursor='pointer';r.onclick=()=>setIso(+r.dataset.q);r.onmouseenter=()=>{hovQ=+r.dataset.q;renderQuad();render()};r.onmouseleave=()=>{hovQ=null;renderQuad();render()}})}
+  el.querySelectorAll('.qc').forEach(r=>{const k=+r.dataset.q;r.setAttribute('fill',isoQ===k?'url(#qh)':hovQ===k?'rgba(28,27,24,.12)':'transparent')});
+  el.querySelector('.ring').style.strokeDashoffset=isoQ!=null?0:1;el.style.color=isoQ!=null||hovQ!=null?'var(--ink)':'var(--faint)';
+  // the view bar's caption is shared: it names whatever you point at or hold
+  const vc=document.querySelector('#views .vc');if(vc)vc.textContent=hovQ!=null?QNAME[hovQ]:isoQ!=null?QNAME[isoQ]:VIEWS[view].n}
 const QNAME=['Rigid · Transformed','Rigid · Formed','Flexible · Transformed','Flexible · Formed'];
 function labelAt(i,p,html,op,align){let el=labelsEl.children[i];if(!el){el=document.createElement('div');el.className='lb';labelsEl.appendChild(el)}el.classList.remove('mq','on');delete el.dataset.q;
   if(!p||op<.01){el.style.opacity=0;return}if(el._src!==html){el._src=html;el._k=1}el._k=(el._k||0)*(TH.fx==='ink'?.95:.92);
