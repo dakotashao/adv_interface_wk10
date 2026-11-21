@@ -250,21 +250,26 @@ function ruler(){const y0=52,x0=28,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i))
   hits({left:(W()/2-270)+'px',top:'10px',width:'540px',height:'56px'},{left:'0',top:(RY(0)-20)+'px',width:'200px',height:(RY(CENT.length-1)-RY(0)+40)+'px'});return o}
 
 // ---- Index
-function index(){const y0=34,x0=28;let o='';const xs=[];let x=W()/2-200;
-  HEMI.forEach((m,i)=>{xs[i]=x;HP[i]=[x+40,y0];o+=E_('text',{x,y:y0+4,class:'sm'},['i','ii','iii','iv'][i])+E_('text',{x:x+14,y:y0+4,class:i===hemi?'on':'',...fzT(i)},m.n);x+=110});
-  const rn=ERA.xviii;CENT.forEach((c,i)=>{const y=RY(i);o+=E_('text',{x:x0,y:y+4,class:'sm',style:i===cen||i===hv?'fill:var(--ink)':'',...fzR(i)},rn[i]);
-    if(hv!==null||i===cen)o+=E_('text',{x:x0+52,y:y+4,class:i===cen?'on':'',opacity:i===cen||i===hv?1:.55,...fzR(i)},lab(i)==rn[i]?CENT[i]:lab(i))});
+function index(){const y0=62,x0=52;let o=barTop()+barRail()+toggleMark(...TGR(),EXP.r.on,hotT==='r');const xs=[];let x=W()/2-200;
+  const pr=prog('r'),pt=prog('t'),rn=ERA.xviii;
+  // collapsed it is only the numerals; the origin opens both axes and the names (with counts) unfold from them
+  HEMI.forEach((m,i)=>{xs[i]=x;HP[i]=[x+40,y0];const no=cl((pt-.3-Math.abs(x-36)/W()*.5)/.25),show=i===hemi||i===hvH?Math.max(no,i===hvH?1:no):no;
+    o+=E_('text',{x,y:y0+4,class:'sm',style:i===hemi||i===hvH?'fill:var(--ink)':'',...fzT(i)},['i','ii','iii','iv'][i]);
+    if(show>.01)o+=E_('text',{x:x+14,y:y0+4,class:i===hemi?'on':'',opacity:show,...fzT(i)},m.n+(no>.5?`<tspan class="sm" dx="5">${cnt(i)}</tspan>`:''));x+=120});
+  CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),ro=cl((pr-.15-i/CENT.length*.6)/.2);
+    o+=E_('text',{x:x0,y:y+4,class:'sm',style:(i===cen||i===hv?'fill:var(--ink)':'')+(n?'':';opacity:.45'),...fzR(i)},rn[i]);
+    if(ro>0||i===hv)o+=E_('text',{x:x0+48,y:y+4,class:i===cen?'on':'',opacity:i===hv?1:ro*(i===cen?1:.6),...fzR(i)},(lab(i)==rn[i]?CENT[i]:lab(i))+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''))});
   // one ring, shared by both bars
   const tg=hv!==null?[x0-9,RY(hv)]:hvH!==null?[xs[hvH]-8,y0]:cen>=0?[x0-9,RY(cen)]:[xs[hemi]-8,y0];if(!G.init){G.rx=tg[0];G.ry=tg[1];G.init=1}
   G.rx=sp(G.rx,tg[0],.14);G.ry=sp(G.ry,tg[1],.14);o+=E_('circle',{cx:G.rx,cy:G.ry,r:3,class:'ln'});
-  hits({left:(W()/2-220)+'px',top:'14px',width:'460px',height:'40px'},{left:'0',top:(RY(0)-20)+'px',width:'200px',height:(RY(CENT.length-1)-RY(0)+40)+'px'});return o}
+  hits({left:(W()/2-220)+'px',top:'44px',width:'500px',height:'36px'},{left:'0',top:'18px',width:'200px',height:(RY(CENT.length-1)-18+20)+'px'});return o}
 
 function pickRow(e){
   let b=null,bd=1e9;CENT.forEach((_,i)=>{const d=Math.abs(RY(i)-e.clientY);if(d<bd){bd=d;b=i}});return bd<22?b:null}
 function pickH(e){let b=null,bd=1e9;HP.forEach(([x],i)=>{const d=Math.abs(e.clientX-x);if(d<bd){bd=d;b=i}});return bd<60?b:null}
 const hr=document.getElementById('hitRail'),ht=document.getElementById('hitTop');
 hr.onmousemove=e=>{const r=pickRow(e);if(r!==hv){hv=r;send({t:'hov',c:r})}};hr.onmouseleave=()=>{hv=null;hotT=null;send({t:'hov',c:null})};
-const nearTg=(e,k)=>{if(opt.nav!=='construct')return false;const [x,y]=k==='r'?TGR():TGT();return Math.hypot(e.clientX-x,e.clientY-y)<14};
+const nearTg=(e,k)=>{if(opt.nav==='ruler')return false;const [x,y]=k==='r'?TGR():TGT();return Math.hypot(e.clientX-x,e.clientY-y)<14};
 const flip=()=>{const now=performance.now(),on=EXP.r.on?0:1;['r','t'].forEach(k=>{EXP[k].on=on;EXP[k].t0=now})};   // both axes open from the origin together
 hr.addEventListener('mousemove',e=>{hotT=nearTg(e,'r')?'r':null});ht.addEventListener('mousemove',e=>{hotT=nearTg(e,'t')?'t':hotT==='t'?null:hotT});
 hr.onclick=e=>{if(nearTg(e,'r')){flip();return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
