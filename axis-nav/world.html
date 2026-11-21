@@ -246,10 +246,9 @@ function setHemi(h){if(level){if(h===hemi)return;hemi=h;yaw=turnTo=turnFrom=yawF
 const VIEWS=[{n:'Front',a:[0,0]},{n:'Side',a:[0,72]},{n:'Top',a:[-72,0]}];let view=0;
 function setView(i){view=i;oxT=VIEWS[i].a[0];oyT=VIEWS[i].a[1];zmT=1;panXT=panYT=0;renderViews()}
 function snapView(){let b=0,bd=1e9;VIEWS.forEach((v,i)=>{const d=Math.hypot(oxT-v.a[0],oyT-v.a[1]);if(d<bd){bd=d;b=i}});setView(b)}
-const VICON=[`<rect x="-6" y="-6" width="12" height="12"/><rect x="-3" y="-3" width="6" height="6" opacity=".6"/>`,
-  `<path d="M-6 -6V6M-1.5 -4.5V4.5M2.5 -3V3M5.5 -2V2"/>`,`<path d="M-6 -6H6M-4.5 -1.5H4.5M-3 2.5H3M-2 5.5H2"/>`];
+const VICON=[`<circle r="6"/><circle r="1.4" fill="currentColor" stroke="none"/>`,`<circle r="6"/><path d="M-6 0H6"/>`,`<circle r="6"/><path d="M0 -6V6"/>`];   // the same small circle as the other bars; a dot is looking straight in, a line is looking along it from the side or from above
 function renderViews(){const el=document.getElementById('views');
-  if(TH===THEMES.paper){el.innerHTML=`<span class="vc">${VIEWS[view].n}</span>`+VIEWS.map((v,i)=>`<button class="${i===view?'on':''}" data-i="${i}" aria-label="${v.n}"><svg width="30" height="30" viewBox="-15 -15 30 30" fill="none" stroke="currentColor" stroke-width="1">${VICON[i]}<circle class="ring" r="13" pathLength="1" transform="rotate(-90)" stroke-opacity=".5"/></svg></button>`).join('');
+  if(TH===THEMES.paper){el.innerHTML=`<span class="vc">${VIEWS[view].n}</span>`+VIEWS.map((v,i)=>`<button class="${i===view?'on':''}" data-i="${i}" aria-label="${v.n}"><svg width="30" height="30" viewBox="-15 -15 30 30" fill="none" stroke="currentColor" stroke-width="1">${VICON[i]}<circle class="ring" r="10" pathLength="1" transform="rotate(-90)" stroke-opacity=".5"/></svg></button>`).join('');
     const vc=el.querySelector('.vc');el.querySelectorAll('button').forEach(b=>{b.onmouseenter=()=>vc.textContent=VIEWS[+b.dataset.i].n;b.onmouseleave=()=>vc.textContent=VIEWS[view].n})}
   else el.innerHTML=VIEWS.map((v,i)=>`<button class="${i===view?'on':''}" data-i="${i}">${v.n}</button>`).join('');
   el.querySelectorAll('button').forEach(b=>b.onclick=()=>setView(+b.dataset.i));el.classList.toggle('show',level===1)}

@@ -40,9 +40,9 @@ const world=document.getElementById('world');const send=m=>world.contentWindow.p
 addEventListener('message',e=>{const d=e.data||{};if(d.t==='state'){if(d.hemi!==hemi||d.cen!==cen)lastAct=performance.now();hemi=d.hemi;cen=d.cen;level=d.level}});
 
 // options
-const opt={nav:'construct',mark:'dot',axis:'line',era:'1700s',lines:'hover',answer:'rings',motion:'compass',touch:'pencil',bar:'plate'};
+const opt={nav:'construct',mark:'dot',axis:'line',era:'1700s',lines:'hover',answer:'rings',motion:'compass',touch:'pencil',bar:'plain'};
 const GROUPS=[['nav',['ruler','index','construct']]];
-const SUB=[['mark',['dot','plus','tick','ring']],['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
+const SUB=[['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
 function drawPick(){const row=([k,vs])=>`<div class="g"><b>${k}</b>${vs.map(v=>`<button data-k="${k}" data-v="${v}" class="${opt[k]===v?'on':''}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`;
   let h=GROUPS.map(row).join('');if(opt.nav==='construct')h+=`<div class="sub">${SUB.map(row).join('')}</div>`;else h+=`<div class="sub">${row(SUB[2])}</div>`;
   const el=document.getElementById('pick');el.innerHTML=h;el.querySelectorAll('button').forEach(b=>b.onclick=()=>{opt[b.dataset.k]=b.dataset.v;G.init=0;lastAct=performance.now();drawPick()})}
@@ -202,6 +202,12 @@ function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math
     p0=[x+r*Math.cos(a0),y+r*Math.sin(a0)],p1=[x+r*Math.cos(a1),y+r*Math.sin(a1)],op=on?.95:.5;
   return E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
     +E_('circle',{cx:x,cy:y,r,class:'ln'})+E_('line',{x1:p0[0].toFixed(2),y1:p0[1].toFixed(2),x2:p1[0].toFixed(2),y2:p1[1].toFixed(2),class:'ln','stroke-width':.6}))}
+
+function cenGlyph(x,y,f,on){const r=6,bg=E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'});   // a little paper under each glyph so the axis line breaks around it
+  if(f<=0)return bg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':.5,'stroke-dasharray':'1.5 2'});
+  f=Math.max(.18,Math.min(1,f));const yc=y+r-2*r*f,dy=yc-y,dx=Math.sqrt(Math.max(0,r*r-dy*dy));
+  const seg=f>=.999?E_('circle',{cx:x,cy:y,r,fill:'url(#hatch)'}):E_('path',{d:`M${(x-dx).toFixed(2)} ${yc.toFixed(2)}A${r} ${r} 0 ${f>.5?1:0} 0 ${(x+dx).toFixed(2)} ${yc.toFixed(2)}Z`,fill:'url(#hatch)'});
+  return bg+seg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.95:.6})}
 const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
 function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
   const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
@@ -214,7 +220,7 @@ function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((
   // every row keeps its name, collapsed or open, so focus is always visible: sharp at the chosen century, softer and fainter away from it
   CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),k=n?2+n/mx*2.5:1.2,rx=RX(i),ro=rowOn(i);
     const d0=cen<0?2:Math.abs(i-cen),mf=i===cen||i===hv?1:Math.max(.25,1-d0*.12);   // collapsed, the marks carry the focus on their own
-    o+=E_('g',{opacity:mf},n?barMark(rx,y,k,i===cen,'v'):E_('circle',{cx:rx,cy:y,r:1.8,class:'ln','stroke-opacity':.35}));   // an empty century is an open mark
+    o+=E_('g',{opacity:mf},cenGlyph(rx,y,n/mx,i===cen));   // one glyph for every bar: a small circle; here its hatching rises with the count, an empty century is a dashed circle
     const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),lx=rx+(opt.bar==='plate'?22:16);
     if(ro>0||i===hv)o+=E_('text',{x:lx,y:y+4,style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
   });
