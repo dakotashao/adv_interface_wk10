@@ -19,7 +19,7 @@ svg#geo .ln{stroke:var(--ink);fill:none;stroke-width:1}
 #pick button.on{color:var(--ink);font-style:normal}
 #pick .sub{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:8px;border-top:1px solid rgba(28,27,24,.12)}
 </style></head><body>
-<iframe id="world" src="world.html?bare&v=1795224513#paper"></iframe>
+<iframe id="world" src="world.html?bare&v=1795225502#paper"></iframe>
 <svg id="geo"></svg>
 <div class="hit" id="hitTop"></div><div class="hit" id="hitRail"></div>
 <div id="pick"></div>
@@ -51,7 +51,7 @@ drawPick();
 // geometry
 const G={init:0};const sp=(a,b,k)=>a+(b-a)*k;const E_=(t,a,i)=>`<${t} ${Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ')}>${i||''}</${t}>`;
 const W=()=>innerWidth,H=()=>innerHeight;
-const RY=i=>{const top=120,bot=H()-250;  /* the lower part of the rail holds the four materials */return top+(bot-top)*(i+.5)/CENT.length};
+const RY=i=>{const top=120,bot=H()-120;return top+(bot-top)*(i+.5)/CENT.length};
 const TX=l=>W()/2-230+((l+135+360)%360)/360*460;   // hemisphere centres evenly along the top
 const lab=i=>ERA[opt.era][i];
 let HP=[];
@@ -248,7 +248,6 @@ function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.ma
   o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
   if(LH){const lx=TX(LH.lon),ly=TYx(lx);o+=E_('line',{x1:lx,y1:ly-6,x2:lx,y2:ly+6,class:'ln','stroke-opacity':.85})+E_('circle',{cx:lx,cy:ly,r:2,fill:'var(--ink)'});   // exactly where it was made
     o+=touch([RX(LH.c),RY(LH.c)],'r')}
-  o+=matBar();
   o+=touch(hvH!==null&&hvH!==hemi?[TX(HEMI[hvH].c),TYx(TX(HEMI[hvH].c))]:null,'t')+touch(hv!==null&&hv!==cen?[RX(hv),RY(hv)]:null,'r');
   // the answer: a ring around the pieces that are both here and then, a small ring on each, lines from both bars meeting on it
   const T=cluster(hemi,cen>=0?cen:null),a=G.a,pa=opt.lines==='point'?1:a;

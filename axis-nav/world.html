@@ -137,6 +137,8 @@
   .lb b{font-weight:500;color:var(--ink)} .lb .tl{color:var(--mute);letter-spacing:.15em} .lb span{color:var(--mute)}
   #go{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);color:var(--mute);z-index:4;transition:color .2s,opacity .4s}
   #go:hover{color:var(--ink)} #go:active{opacity:.5}
+  #quad{position:fixed;right:210px;bottom:24px;display:flex;flex-direction:row-reverse;align-items:center;gap:10px;z-index:4;opacity:0;pointer-events:none;transition:opacity .4s;color:var(--ink)}
+  #quad.show{opacity:1;pointer-events:auto}#quad rect{cursor:pointer;transition:fill .2s}#quad .qn{font-style:italic;color:var(--mute);font-size:12px;white-space:nowrap}
   #views{position:fixed;right:28px;bottom:26px;display:flex;gap:16px;z-index:4;opacity:0;pointer-events:none;transition:opacity .4s}
   #views.show{opacity:1;pointer-events:auto}
   #views button{color:var(--faint);transition:color .2s,transform .15s var(--ease)}
@@ -190,7 +192,7 @@
 <aside id="side"><button id="sideBtn" aria-label="Expand"><i></i><i></i><i></i><i></i></button><div id="list"></div></aside>
 <div id="labels"></div>
 <button id="go">Enter →</button>
-<nav id="views"></nav>
+<nav id="views"></nav><nav id="quad"></nav>
 <div id="focus"><svg id="oring"><circle pathLength="1"/></svg><div id="card"><div class="f"><img alt=""></div><div class="b"></div></div><div id="cap"></div></div>
 
 <script>
@@ -256,8 +258,8 @@ function renderViews(){const el=document.getElementById('views');
     const vc=el.querySelector('.vc');el.querySelectorAll('button').forEach(b=>{b.onmouseenter=()=>vc.textContent=VIEWS[+b.dataset.i].n;b.onmouseleave=()=>vc.textContent=VIEWS[view].n})}
   else el.innerHTML=VIEWS.map((v,i)=>`<button class="${i===view?'on':''}" data-i="${i}">${v.n}</button>`).join('');
   el.querySelectorAll('button').forEach(b=>b.onclick=()=>setView(+b.dataset.i));el.classList.toggle('show',level===1)}
-function goIn(c){if(turnT<1)return;level=1;morphT=1;depthT=c??firstCentury();const k=Math.round(oy/360)*360;oy-=k;oyT-=k;vx=vy=0;setView(0);render()}
-function goOut(){isoQ=null;hovQ=null;level=0;morphT=0;oxT=0;oyT=0;document.getElementById('views').classList.remove('show');unfocus();zmT=1;panXT=panYT=0;render()}
+function goIn(c){if(turnT<1)return;level=1;morphT=1;depthT=c??firstCentury();const k=Math.round(oy/360)*360;oy-=k;oyT-=k;vx=vy=0;setView(0);renderQuad();render()}
+function goOut(){isoQ=null;hovQ=null;setTimeout(renderQuad,0);level=0;morphT=0;oxT=0;oyT=0;document.getElementById('views').classList.remove('show');unfocus();zmT=1;panXT=panYT=0;render()}
 const mine=()=>P.filter(p=>inHemi(p,hemi));
 const firstCentury=()=>{const c=mine().map(p=>p.cen);return c.length?Math.min(...c):0};
 
@@ -565,9 +567,20 @@ function hit(x,y){for(let i=rects.length-1;i>=0;i--){const r=rects[i];if(x>=r[0]
 const labelsEl=document.getElementById('labels');
 // the four material labels on the cross can be pointed at (ring that quadrant's pieces in this century) and clicked (keep only that quadrant; again to let go)
 function tagQ(i,q){const el=labelsEl.children[i];if(!el)return;el.dataset.q=q;el.classList.add('mq');el.classList.toggle('on',isoQ===q)}
-labelsEl.addEventListener('mouseover',e=>{const el=e.target.closest('.mq');if(el){hovQ=+el.dataset.q;render()}});
-labelsEl.addEventListener('mouseout',e=>{const el=e.target.closest('.mq');if(el&&!el.contains(e.relatedTarget)){hovQ=null;render()}});
-labelsEl.addEventListener('click',e=>{const el=e.target.closest('.mq');if(!el)return;e.stopPropagation();const q=+el.dataset.q;isoQ=isoQ===q?null:q;render()});
+labelsEl.addEventListener('mouseover',e=>{const el=e.target.closest('.mq');if(el){hovQ=+el.dataset.q;renderQuad();render()}});
+labelsEl.addEventListener('mouseout',e=>{const el=e.target.closest('.mq');if(el&&!el.contains(e.relatedTarget)){hovQ=null;renderQuad();render()}});
+labelsEl.addEventListener('click',e=>{const el=e.target.closest('.mq');if(!el)return;e.stopPropagation();setIso(+el.dataset.q)});
+// holding a material quadrant: the camera moves in on that quarter of the cross and the rest step back; again to come back out
+function setIso(q){isoQ=isoQ===q?null:q;if(isoQ!=null)zoomQuarter(isoQ);else{zmT=1;panXT=panYT=0}renderQuad();render()}
+// a 2×2 map of the cross beside the view bar: the same four quadrants, always in the same place
+function renderQuad(){const el=document.getElementById('quad');if(!el)return;el.classList.toggle('show',level===1);
+  if(!el.firstChild){   // built once; hovering only changes attributes, so a click is never lost to a rebuilt element
+    el.innerHTML=`<svg width="30" height="30" viewBox="-1 -1 30 30" fill="none" stroke="currentColor" stroke-width="1"><defs><pattern id="qh" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="currentColor" stroke-width=".7"/></pattern></defs>`
+      +[0,1,2,3].map(k=>`<rect class="qc" data-q="${k}" x="${(k%2)*14}" y="${(k<2?0:1)*14}" width="14" height="14"/>`).join('')+`</svg><span class="qn"></span>`;
+    el.querySelectorAll('.qc').forEach(r=>{r.onclick=()=>setIso(+r.dataset.q);r.onmouseenter=()=>{hovQ=+r.dataset.q;renderQuad();render()};r.onmouseleave=()=>{hovQ=null;renderQuad();render()}})}
+  el.querySelectorAll('.qc').forEach(r=>{const k=+r.dataset.q,on=isoQ===k,h=hovQ===k;r.setAttribute('fill',on?'url(#qh)':h?'rgba(28,27,24,.06)':'transparent');r.setAttribute('stroke-opacity',on||h?.9:.45)});
+  el.querySelector('.qn').textContent=hovQ!=null?QNAME[hovQ]:isoQ!=null?QNAME[isoQ]:''}
+const QNAME=['Rigid · Transformed','Rigid · Formed','Flexible · Transformed','Flexible · Formed'];
 function labelAt(i,p,html,op,align){let el=labelsEl.children[i];if(!el){el=document.createElement('div');el.className='lb';labelsEl.appendChild(el)}el.classList.remove('mq','on');delete el.dataset.q;
   if(!p||op<.01){el.style.opacity=0;return}if(el._src!==html){el._src=html;el._k=1}el._k=(el._k||0)*(TH.fx==='ink'?.95:.92);
   if(TH.fx==='ink'){if(el._h!==html){el.innerHTML=html;el._h=html}el.style.filter='none'}   // paper: words blur and fade like ink, never break into code
