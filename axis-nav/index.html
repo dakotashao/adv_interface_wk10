@@ -155,12 +155,13 @@ function shape(K,op,dash,ends){const d=dash?{'stroke-dasharray':dash}:{};let o='
 function toRing(ax,ay,c){const dx=c.cx-ax,dy=c.cy-ay,L=Math.hypot(dx,dy)||1;return[c.cx-dx/L*c.r,c.cy-dy/L*c.r]}
 // bar shapes: arc bows both bars like a protractor; the others stay straight
 const BOW=()=>false;
-const RX=i=>{const x0=36;if(!BOW())return x0;const m=(RY(0)+RY(CENT.length-1))/2,h=(RY(CENT.length-1)-RY(0))/2+24,u=(RY(i)-m)/h;return x0+28*(1-u*u)};
+const RX=i=>{const x0=RXB();if(!BOW())return x0;const m=(RY(0)+RY(CENT.length-1))/2,h=(RY(CENT.length-1)-RY(0))/2+24,u=(RY(i)-m)/h;return x0+28*(1-u*u)};
 const TYx=x=>{const y0=40;if(!BOW())return y0;const v=(x-W()/2)/260;return y0+14*(1-v*v)};
 // ---- collapsed / expanded: collapsed is only the marks; opening draws the axis out from its end circle across the whole page
 const EXP={r:{on:0,t0:-1e9},t:{on:0,t0:-1e9}};
 const prog=k=>{const e=EXP[k],t=performance.now()-e.t0;return e.on?eo(cl(t/750)):1-eo(cl(t/450))};
-const TGR=()=>[36,40],TGT=()=>[36,40];   // one switch where the two axes cross: the origin
+const RXB=()=>opt.nav==='construct'?150:36;   // construct keeps room on the left so names can sit on both sides of the time axis
+const TGR=()=>[RXB(),40],TGT=()=>[RXB(),40];   // one switch where the two axes cross: the origin
 function toggleMark(x,y,on,hot){return E_('circle',{cx:x,cy:y,r:hot?4.5:3.5,class:'ln','stroke-opacity':hot?.9:.6})+(on?E_('circle',{cx:x,cy:y,r:1.4,fill:'var(--ink)'}):'')}
 let hotT=null;
 function barTop_OLD(){const y0=40,L=W()/2-250,Rr=W()/2+250,b=opt.bar;let o='';
@@ -207,7 +208,7 @@ function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math
 function cenGlyph(x,y,f,on){const r=6,bg=E_('circle',{cx:x,cy:y,r:r+1.5,fill:'var(--bg)'});
   return bg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':f>0?(on?.95:.6):.45,...(f>0?{}:{'stroke-dasharray':'1.5 2'})})}
 const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
-function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
+function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
   const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
   const want=opt.lines==='full'?1:opt.lines==='hover'?(busy?1:0):0;G.a=sp(G.a??0,want,want?.09:.04);
   const pr=prog('r'),pt=prog('t');o+=barTop()+barRail();
@@ -219,8 +220,8 @@ function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((
   CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),k=n?2+n/mx*2.5:1.2,rx=RX(i),ro=rowOn(i);
     const d0=cen<0?2:Math.abs(i-cen),mf=i===cen||i===hv?1:Math.max(.25,1-d0*.12);   // collapsed, the marks carry the focus on their own
     o+=E_('g',{opacity:mf},cenGlyph(rx,y,n/mx,i===cen));   // one glyph for every bar: a small circle; here its hatching rises with the count, an empty century is a dashed circle
-    const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),lx=rx+(opt.bar==='plate'?22:16);
-    if(ro>0||i===hv)o+=E_('text',{x:lx,y:y+4,style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
+    const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),left=i%2===1,lx=left?rx-16:rx+16;   // names alternate sides of the axis
+    if(ro>0||i===hv)o+=E_('text',{x:lx,y:y+4,'text-anchor':left?'end':'start',style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''));
   });
   const ax=TX(HEMI[hemi].c),ay=TYx(ax)+12,bx=(cen>=0?RX(cen):x0)+12,by=cen>=0?RY(cen):null;
   o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
@@ -235,7 +236,7 @@ function construct(){const y0=40,x0=36,inR=hv!==null,mx=Math.max(1,...CENT.map((
     return E_('line',{x1:sx,y1:sy,x2:ex,y2:ey,class:'ln','stroke-opacity':.25,'stroke-dasharray':'1 5'})+shape(K,.28,'1 4',[[ex,ey]])};
   if(hv!==null&&hv!==cen)o+=prev(hemi,hv,RX(hv)+12,RY(hv));
   if(hvH!==null&&hvH!==hemi)o+=prev(hvH,cen>=0?cen:null,TX(HEMI[hvH].c),ay);
-  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:'18px',width:'200px',height:(RY(CENT.length-1)-18+20)+'px'});
+  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:'18px',width:(RXB()+170)+'px',height:(RY(CENT.length-1)-18+20)+'px'});
   return o}
 
 // ---- Ruler
@@ -265,6 +266,7 @@ function index(){const y0=62,x0=52;let o=barTop()+barRail()+toggleMark(...TGR(),
   hits({left:(W()/2-220)+'px',top:'44px',width:'500px',height:'36px'},{left:'0',top:'18px',width:'200px',height:(RY(CENT.length-1)-18+20)+'px'});return o}
 
 function pickRow(e){
+  if(e.clientX>RXB()+180)return null;
   let b=null,bd=1e9;CENT.forEach((_,i)=>{const d=Math.abs(RY(i)-e.clientY);if(d<bd){bd=d;b=i}});return bd<22?b:null}
 function pickH(e){let b=null,bd=1e9;HP.forEach(([x],i)=>{const d=Math.abs(e.clientX-x);if(d<bd){bd=d;b=i}});return bd<60?b:null}
 const hr=document.getElementById('hitRail'),ht=document.getElementById('hitTop');
