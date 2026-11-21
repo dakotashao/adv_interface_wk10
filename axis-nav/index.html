@@ -19,10 +19,10 @@ svg#geo .ln{stroke:var(--ink);fill:none;stroke-width:1}
 #pick button.on{color:var(--ink);font-style:normal}
 #pick .sub{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:8px;border-top:1px solid rgba(28,27,24,.12)}
 </style></head><body>
-<iframe id="world" src="world.html?bare&v=1795225669#paper"></iframe>
+<iframe id="world" src="world.html?bare&v=1795244237#paper"></iframe>
 <svg id="geo"></svg>
 <div class="hit" id="hitTop"></div><div class="hit" id="hitRail"></div>
-<div id="pick"></div>
+
 <script>
 const HEMI=[{n:'Eastern',c:90,q:[0,1]},{n:'Pacific',c:180,q:[1,2]},{n:'Western',c:-90,q:[2,3]},{n:'Atlantic',c:0,q:[3,0]}];
 const CENT=['1900s','1800s','1700s','1600s','1500s','1400s','1300s','1000–1300','500–1000','1–500','500 BCE','before 500 BCE'];
@@ -40,13 +40,13 @@ const world=document.getElementById('world');const send=m=>world.contentWindow.p
 addEventListener('message',e=>{const d=e.data||{};if(d.t==='state'){if(d.hemi!==hemi||d.cen!==cen)lastAct=performance.now();hemi=d.hemi;cen=d.cen;level=d.level}});
 
 // options
-const opt={nav:'construct',mark:'dot',axis:'line',era:'1700s',lines:'hover',answer:'rings',motion:'compass',touch:'pencil',bar:'plain'};
+const opt={nav:'construct',era:'xviii',lines:'full',answer:'rings',motion:'compass',touch:'crosshair',bar:'plain',mark:'dot'};   // the chosen set
 const GROUPS=[['nav',['ruler','index','construct']]];
 const SUB=[['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
 function drawPick(){const row=([k,vs])=>`<div class="g"><b>${k}</b>${vs.map(v=>`<button data-k="${k}" data-v="${v}" class="${opt[k]===v?'on':''}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`;
   let h=GROUPS.map(row).join('');if(opt.nav==='construct')h+=`<div class="sub">${SUB.map(row).join('')}</div>`;else h+=`<div class="sub">${row(SUB[2])}</div>`;
   const el=document.getElementById('pick');el.innerHTML=h;el.querySelectorAll('button').forEach(b=>b.onclick=()=>{opt[b.dataset.k]=b.dataset.v;G.init=0;lastAct=performance.now();drawPick()})}
-drawPick();
+/* the comparison panel is retired: drawPick() is no longer called */
 
 // geometry
 const G={init:0};const sp=(a,b,k)=>a+(b-a)*k;const E_=(t,a,i)=>`<${t} ${Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ')}>${i||''}</${t}>`;
