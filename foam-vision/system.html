@@ -32,6 +32,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .arch .meta i{font-style:normal;opacity:.45;transition:opacity .8s}
 .arch .go{position:absolute;right:14px;bottom:40px;width:34px;height:34px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;transform:scale(0);transition:transform .8s var(--ease)}
 .hoverable .arch:hover .win{clip-path:circle(var(--R) at 50% var(--cy))}
+.foamart{transition:transform 1.1s var(--ease)}.arch:hover .foamart{transform:scale(1.08)}
 .hoverable .arch:hover .go{transform:scale(1);transition-delay:.25s}
 .hoverable .arch:hover .meta i{opacity:.7}
 
@@ -176,22 +177,26 @@ const IC={
 const icon=(d,s=18,c=INK)=>`<svg width="${s}" height="${s}" viewBox="0 0 20 20"><path d="${d}" fill="none" stroke="${c}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const WORKS=[['Breath',2026,'motion'],['Surface tension',2026,'motion'],['Halftone rain',2025,'type'],['Soft clock',2026,'objects'],['Pressure',2025,'motion'],['Wobble grotesk',2026,'type'],['Three bubbles',2025,'objects'],['Drift',2026,'motion'],['Stretch',2025,'type'],['Cushion',2026,'objects'],['Tie-off',2026,'motion'],['Inflate',2026,'type']];
 function rng(seed){let a=seed*9301+49297;return()=>{a=(a*1103515245+12345)%2147483648;return a/2147483648}}
-// a small slowly-drifting foam picture
-function art(seed,W,H){
-  const R=rng(seed+3),BG=['#4b3d33','#3e3a33','#55473c','#40362e'][seed%4];
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"><rect width="${W}" height="${H}" fill="${BG}"/>`;
-  const n=3+Math.floor(R()*2),m=Math.min(W,H),acc=Math.floor(R()*n);
-  for(let k=0;k<n;k++){
-    const cx=W*(0.15+R()*0.7),cy=H*(0.12+R()*0.6),r=m*(0.12+R()*0.26);
-    const fill=k===acc?(seed%3===0?'#dce48c':'#857c72'):`rgba(255,244,230,${(0.06+R()*0.09).toFixed(2)})`;
-    s+=`<g class="drift" style="--dx:${(R()*16-8).toFixed(1)}px;--dy:${(R()*16-8).toFixed(1)}px;animation-duration:${(7+R()*6).toFixed(1)}s;animation-delay:-${(R()*6).toFixed(1)}s"><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}"/></g>`;
-  }
-  return s+'</svg>';
+// each work is a small foam: two or three bubbles that share walls, never overlap
+function art(seed,W,H,cy,rr){
+  const R=rng(seed+3);cy=cy??H*0.42;rr=rr??Math.min(W,H)*0.3;const cx=W/2;
+  const n=2+Math.floor(R()*2),main=rr*(0.74+R()*0.12),C=[{x:0,y:0,r:main}];let a=R()*Math.PI*2;
+  for(let k=1;k<n;k++){const r=main*(0.42+R()*0.22),d=(main+r)*0.84;C.push({x:Math.cos(a)*d,y:Math.sin(a)*d,r});a+=1.1+R()*1.3}
+  // centre the cluster in the window
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;C.forEach(c=>{x0=Math.min(x0,c.x-c.r);x1=Math.max(x1,c.x+c.r);y0=Math.min(y0,c.y-c.r);y1=Math.max(y1,c.y+c.r)});
+  const sc=Math.min(1,(rr*2*0.98)/Math.max(x1-x0,y1-y0)),ox=cx-(x0+x1)/2*sc,oy=cy-(y0+y1)/2*sc;C.forEach(c=>{c.x=ox+c.x*sc;c.y=oy+c.y*sc;c.r*=sc});
+  const acc=seed%3===0?Math.floor(R()*n):-1,cols=['#665b52','#544a43','#4a413a'];
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"><g class="foamart" style="transform-origin:${cx}px ${cy}px">`;
+  C.forEach((c,i)=>{let P=[];for(let q=0;q<64;q++){const t=q/64*Math.PI*2;P.push([c.x+c.r*Math.cos(t),c.y+c.r*Math.sin(t)])}
+    C.forEach((o,j)=>{if(j===i)return;const dx=o.x-c.x,dy=o.y-c.y,d=Math.hypot(dx,dy);if(d>=c.r+o.r)return;const nx=dx/d,ny=dy/d,q=(d*d+c.r*c.r-o.r*o.r)/(2*d)-Math.max(1,rr*0.03);
+      const out=[];for(let z=0;z<P.length;z++){const A=P[z],B=P[(z+1)%P.length],fa=(A[0]-c.x)*nx+(A[1]-c.y)*ny-q,fb=(B[0]-c.x)*nx+(B[1]-c.y)*ny-q;if(fa<=0)out.push(A);if((fa<=0)!==(fb<=0)){const u=fa/(fa-fb);out.push([A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u])}}P=out});
+    s+=`<path d="M${P.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join('L')}Z" fill="${i===acc?'#dce48c':cols[i%3]}"/>`});
+  return s+'</g></svg>';
 }
 function arch([t,y],seed,W,H,cy,r){
   const el=document.createElement('div');el.className='arch';
   el.style.cssText=`width:${W}px;height:${H}px;--cy:${cy}px;--r:${r}px;--R:${H*1.2}px`;
-  el.innerHTML=`<div class="win">${art(seed,W,H)}</div><div class="meta"><span>${t}</span><i>${y}</i></div><div class="go">${icon(IC.arrow,15,DARK)}</div>`;
+  el.innerHTML=`<div class="win">${art(seed,W,H,cy,r)}</div><div class="meta"><span>${t}</span><i>${y}</i></div><div class="go">${icon(IC.arrow,15,DARK)}</div>`;
   el.dataset.seed=seed;el.dataset.t=t.toLowerCase();el.dataset.y=y;el.dataset.W=W;el.dataset.H=H;el.dataset.cy=cy;el.dataset.r=r;
   return el;
 }
@@ -213,7 +218,7 @@ WORKS.slice(0,4).forEach((w,i)=>$('#d1 .arches').append(arch(w,i,210,290,100,78)
     const W=+c.dataset.W,H=+c.dataset.H,cy=+c.dataset.cy,r=+c.dataset.r;
     const x0=R.left-S.left+W/2,y0=R.top-S.top+cy,D=360,x1=S.width*0.3,y1=S.height*0.54,k=D/(2*r);
     const hero=document.createElement('div');hero.className='hero';
-    hero.innerHTML=`<div class="in" style="width:${W}px;height:${H}px">${art(+c.dataset.seed,W,H)}</div>`;
+    hero.innerHTML=`<div class="in" style="width:${W}px;height:${H}px">${art(+c.dataset.seed,W,H,cy,r)}</div>`;
     st.append(hero);const inner=$('.in',hero);
     const box=(x,y,d)=>({left:x-d/2+'px',top:y-d/2+'px',width:d+'px',height:d+'px'});
     const tr=s=>`translate(${-W/2}px,${-cy}px) scale(${s})`;
