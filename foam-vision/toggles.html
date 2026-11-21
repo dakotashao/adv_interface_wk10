@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>foam — toggles v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#120c08}
+body{color:#ece4d8;font:400 14px "Inter Tight",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 32px 100px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tile{position:relative;height:440px;border-radius:30px;background:#1f1711;display:flex;align-items:center;justify-content:center}
+.chip{position:absolute;left:20px;top:18px;display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:14px;background:rgba(255,244,230,.08);font-size:12px}
+.list{display:flex;flex-direction:column;gap:30px}
+.row{display:flex;align-items:center;justify-content:space-between;width:240px;font-size:15px}
+.row span{transition:opacity .8s}
+svg.tg{cursor:pointer;display:block;overflow:visible}
+.big svg.tg{transform:scale(2.4);transform-origin:center}
+.big{height:300px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="grid">
+  <section class="tile"><span class="chip">A2 · grows along the bar</span><div class="list" id="LA"></div></section>
+  <section class="tile"><span class="chip">B2 · the bubble holds what it controls</span><div class="list" id="LB"></div></section>
+  <section class="tile"><span class="chip">C2 · switch + pressure</span><div class="list" id="LC"></div></section>
+  <section class="tile big"><span class="chip">A2 · close up</span><div id="ZA"></div></section>
+  <section class="tile big"><span class="chip">B2 · close up</span><div id="ZB"></div></section>
+  <section class="tile big"><span class="chip">C2 · close up</span><div id="ZC"></div></section>
+</div></div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const W=92,H=52,PAD=4,R=(H-2*PAD)/2,CY=H/2,X0=PAD;
+let uid=0;
+function make(host,on,mode='A',icon=''){
+  const id='t'+(uid++);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','tg');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML=`<defs>
+    <radialGradient id="${id}g" cx="50%" cy="58%" r="60%"><stop offset="0" stop-color="#dce48c" stop-opacity="1"/><stop offset=".55" stop-color="#dce48c" stop-opacity=".55"/><stop offset="1" stop-color="#e8a77a" stop-opacity=".05"/></radialGradient>
+    <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd9e6"/><stop offset=".35" stop-color="#fff6dc"/><stop offset=".6" stop-color="#d7f2e4"/><stop offset="1" stop-color="#e2d8ff"/></linearGradient>
+    <clipPath id="${id}c"><path/></clipPath></defs>
+    <rect width="${W}" height="${H}" rx="${H/2}" fill="rgba(255,244,230,.08)"/>
+    <g clip-path="url(#${id}c)"><rect class="glow" width="${W}" height="${H}" fill="url(#${id}g)"/></g>
+    <path class="body" fill="rgba(255,244,230,.07)"/>
+    <path class="rim" fill="none" stroke="url(#${id}r)" stroke-width="1"/>
+    <ellipse class="hl" rx="3.2" ry="1.9" fill="rgba(255,255,255,.85)"/>
+    <ellipse class="hl2" rx="5" ry="1.3" fill="rgba(255,250,240,.28)"/>
+    <path class="ic" d="${icon}" fill="none" stroke="#ece4d8" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect class="hit" width="${W}" height="${H}" fill="transparent"/>`;
+  if(mode==='C'){svg.insertAdjacentHTML('afterbegin','');const tr=svg.querySelector('rect');tr.insertAdjacentHTML('afterend',`<rect class="tl" x="0" y="0" width="${W}" height="${H}" rx="${H/2}" fill="url(#${id}g)" opacity="0"/>`)}
+  host.append(svg);
+  const st={mode,ic:svg.querySelector('.ic'),tl:svg.querySelector('.tl'),on,t:on?1:0,v:0,svg,clip:svg.querySelector(`#${id}c path`),body:svg.querySelector('.body'),rim:svg.querySelector('.rim'),glow:svg.querySelector('.glow'),hl:svg.querySelector('.hl'),hl2:svg.querySelector('.hl2'),wob:0,wv:0,press:0};
+  svg.addEventListener('pointerdown',()=>st.press=1);
+  svg.addEventListener('pointerleave',()=>st.press=0);
+  svg.addEventListener('pointerup',()=>{st.press=0;st.on=!st.on;st.wv+=st.on?0.9:-0.6;st.onchange&&st.onchange(st.on)});
+  return st;
+}
+// outline of two circles (back rb at xb, front rf at xf) joined by tangents
+function shape(xb,rb,xf,rf){
+  const d=Math.max(0.001,xf-xb),pts=[];
+  if(d<Math.abs(rf-rb)+0.01){const r=Math.max(rb,rf),x=rf>rb?xf:xb;for(let k=0;k<48;k++){const a=k/48*Math.PI*2;pts.push([x+r*Math.cos(a),CY+r*Math.sin(a)])}return pts}
+  const th=Math.acos(Math.max(-1,Math.min(1,(rb-rf)/d)));
+  for(let k=0;k<=24;k++){const a=-th+(k/24)*(2*th);pts.push([xf+rf*Math.cos(a),CY+rf*Math.sin(a)])}
+  for(let k=0;k<=24;k++){const a=th+(k/24)*(2*Math.PI-2*th);pts.push([xb+rb*Math.cos(a),CY+rb*Math.sin(a)])}
+  return pts;
+}
+const P=pts=>'M'+pts.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join('L')+'Z';
+function step(s,now){
+  if(s.mode!=='A')return stepBC(s,now);
+  // slow, overdamped main motion — no bounce
+  const target=s.on?1:0;s.v=(s.v+(target-s.t)*0.009)*0.86;s.t+=s.v;
+  // surface tension: a small membrane tremble that settles, never pushes past the bar
+  s.wv=(s.wv-s.wob*0.08)*0.9;s.wob+=s.wv*0.1;
+  const t=Math.max(0,Math.min(1,s.t)),speed=Math.abs(s.v);
+  // phase 1 (0–.45): the small bubble fills the height; phase 2 (.45–1): it stretches along the bar
+  // off = a normal-size bubble on the left; on = it stretches along the bar and fills with light
+  const p1=1,p2=t;
+  const e1=1-Math.pow(1-p1,3),e2=p2<.5?2*p2*p2:1-Math.pow(-2*p2+2,2)/2;
+  let r=R*(1-0.04*Math.sin(Math.PI*t));
+  r=r*(1-0.06*s.press);
+  const xb=X0+r, xMax=W-PAD-R, xf=xb+(xMax-(X0+R))*e2;
+  // while moving, the leading end is fuller and the back thins (like a bubble being blown forward)
+  const lean=Math.min(1,speed*60)*(s.on?1:-1);
+  let rf=r, rb=r*(1-0.09*Math.abs(lean)*(e2>0&&e2<1?1:0.3));
+  if(lean<0){const tmp=rf;rf=rb;rb=tmp}
+  rf=Math.min(R,rf*(1+0.025*Math.sin(now/220)*Math.abs(s.wob)));
+  const pts=shape(xb,rb,xf,rf);
+  // keep every point inside the bar (edges grow along it)
+  for(const p of pts){p[1]=Math.max(PAD,Math.min(H-PAD,p[1]));p[0]=Math.max(PAD,Math.min(W-PAD,p[0]))}
+  const d=P(pts);s.body.setAttribute('d',d);s.rim.setAttribute('d',d);s.clip.setAttribute('d',d);
+  s.rim.setAttribute('stroke-opacity',(0.35+0.45*t).toFixed(2));
+  s.glow.style.opacity=(Math.pow(t,1.6)*0.9).toFixed(3);
+  // highlights ride on the bubble's back-top and stretch with it
+  s.hl.setAttribute('cx',(xb-r*0.35).toFixed(2));s.hl.setAttribute('cy',(CY-r*0.5).toFixed(2));
+  s.hl.setAttribute('rx',(2.2+1.4*e1).toFixed(2));
+  s.hl2.setAttribute('cx',((xb+xf)/2).toFixed(2));s.hl2.setAttribute('cy',(CY+r*0.72).toFixed(2));s.hl2.setAttribute('rx',(3+ (xf-xb)*0.35).toFixed(2));s.hl2.style.opacity=e2.toFixed(2);
+}
+// B2 / C2: a bubble thumb that travels; same skin as A2
+function stepBC(s,now){
+  const target=s.on?1:0;s.v=(s.v+(target-s.t)*0.009)*0.86;s.t+=s.v;
+  s.pr=(s.pr||0)+((s.press?1:0)-(s.pr||0))*0.12;
+  const t=Math.max(0,Math.min(1,s.t)),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  let r=R, xb, xf, rb, rf;
+  const left=X0+R,right=W-PAD-R,cx=left+(right-left)*e;
+  if(s.mode==='B'){
+    // off: a smaller, dimmer bubble; on: full size and lit — it inflates as it travels
+    r=R*(1-0.06*s.pr);
+    const lean=Math.min(1,Math.abs(s.v)*60);
+    xb=cx-(s.on?1:-1)*lean*2.4;xf=cx+(s.on?1:-1)*lean*2.4;if(xf<xb){const q=xb;xb=xf;xf=q}
+    rb=r*(1-0.05*lean);rf=r;
+  }else{
+    // C: squash on press — the bubble widens along the bar, height stays inside it
+    const sq=s.pr;r=R*(1-0.12*sq);const stretch=9*sq;
+    xb=cx-stretch/2;xf=cx+stretch/2;rb=rf=r;
+  }
+  // keep the whole bubble inside the bar by moving it, never by flattening it
+  const lo=X0+rb-xb,hi=(W-PAD-rf)-xf;if(lo>0){xb+=lo;xf+=lo}else if(hi<0){xb+=hi;xf+=hi}
+  const pts=shape(xb,rb,xf,rf);
+  const d=P(pts);s.body.setAttribute('d',d);s.rim.setAttribute('d',d);s.clip.setAttribute('d',d);
+  s.rim.setAttribute('stroke-opacity',(0.3+0.5*e).toFixed(2));
+  s.glow.style.opacity=(s.mode==='B'?Math.pow(e,1.4)*0.85:0.18*e).toFixed(3);
+  if(s.tl)s.tl.setAttribute('opacity',(Math.pow(e,1.3)*0.75).toFixed(3));
+  s.body.setAttribute('fill',`rgba(255,244,230,${(s.mode==='B'?0.04+0.05*e:0.1).toFixed(3)})`);
+  const mx=(xb+xf)/2;
+  s.hl.setAttribute('cx',(xb-r*0.38).toFixed(2));s.hl.setAttribute('cy',(CY-r*0.5).toFixed(2));s.hl.setAttribute('rx',(2.6+0.8*e).toFixed(2));
+  s.hl2.setAttribute('cx',mx.toFixed(2));s.hl2.setAttribute('cy',(CY+r*0.72).toFixed(2));s.hl2.setAttribute('rx',(3.2+(xf-xb)*0.3).toFixed(2));s.hl2.style.opacity=(0.5+0.5*e).toFixed(2);
+  if(s.ic.getAttribute('d')){const sc=(r/R)*0.82;s.ic.setAttribute('transform',`translate(${mx-10*sc},${CY-10*sc}) scale(${sc})`);
+    s.ic.setAttribute('stroke',e>0.6?'#1d1912':'#ece4d8');s.ic.style.opacity=(0.45+0.55*e).toFixed(2)}
+}
+const IC={Motion:'M3 10c1.5-3.6 3-3.6 4.5 0s3 3.6 4.5 0 3-3.6 4.5 0',Sound:'M4 8v4M7 6v8M10 4v12M13 6v8M16 8v4',Glass:'M10 3.5c3.6 0 6.5 2.9 6.5 6.5s-2.9 6.5-6.5 6.5S3.5 13.6 3.5 10 6.4 3.5 10 3.5zM7 7.5c.8-.9 1.8-1.3 3-1.3'};
+const all=[];
+['A','B','C'].forEach(m=>{
+  [['Motion',true],['Sound',false],['Glass',true]].forEach(([n,on])=>{
+    const r=document.createElement('div');r.className='row';r.innerHTML=`<span>${n}</span>`;document.getElementById('L'+m).append(r);
+    const s=make(r,on,m,m==='B'?IC[n]:'');const lab=r.querySelector('span');s.onchange=o=>lab.style.opacity=o?1:.5;s.onchange(on);all.push(s);
+  });
+  all.push(make(document.getElementById('Z'+m),false,m,m==='B'?IC.Motion:''));
+});
+(function loop(now){all.forEach(s=>step(s,now));requestAnimationFrame(loop)})(performance.now());
+</script>
+</body>
+</html>

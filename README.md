@@ -9,3 +9,7 @@ Advanced Interface, week 10: Navigation.
 | 3 | Serene | **Breath · Foam**: the same foam system, slowed down. Every bubble breathes at its exercise's pace (6, 10, 30 breaths a minute), the big bubble breathes with the suggested exercise and the duration bubbles stay attached to it as it swells and shrinks. Pick 1, 3 or 5 minutes and press Start: the other bubbles deflate, the big bubble counts down and reads Breathe in · Hold · Breathe out in time with its own size; End brings the page back. Ten ways to show the breath inside the big bubble, from light (glow, mesh, tide, ripple, sunrise) to flat shapes (none, inner circle, level, micro-foam, count). Lime on warm dark | [Open](https://dakotashao.github.io/adv_interface_wk10/breath/) |
 
 Each set lives in its own folder with a self-contained index.html. Spec is inside each prototype (Spec button).
+
+## Final vision · foam
+
+The direction for the final: one design system built from a single shape, a bubble. Object, brand sheet, components, toggles and the two navigation sets in one page. [Open](https://dakotashao.github.io/adv_interface_wk10/foam-vision/)
