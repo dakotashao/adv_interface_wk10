@@ -35,8 +35,8 @@ function crystal(sysName){const s=SYS[sysName]||SYS.cubic,[A,B,Cv]=basis(s),V=[]
     for(const i of[-1,1])for(const j of[-1,1]){E.push([ids[[-1,i,j]],ids[[1,i,j]]],[ids[[i,-1,j]],ids[[i,1,j]]],[ids[[i,j,-1]],ids[[i,j,1]]])}}
   const ctr=V.reduce((m,v)=>m.map((x,i)=>x+v[i]/V.length),[0,0,0]);V.forEach(v=>{for(let i=0;i<3;i++)v[i]-=ctr[i]});
   const R=Math.max(...V.map(v=>Math.hypot(...v)));return {V:V.map(v=>v.map(x=>x/R)),E,ax:[A,B,Cv].map(v=>{const l=Math.hypot(...v);return v.map(x=>x/l)}),s}}
-const rot={x:-.32,y:.55,vx:0,vy:.0022};let XT=null,xt0=0,hardS=1;
-function drawSpecimen(now){const p=focus;if(!p||!p.ar)return;const k=ease((now-xt0)/900);if(!XT||XT.p!==p){XT={p,...crystal(p.id)};xt0=now;hardS=1}
+const rot={x:-.32,y:.55,vx:0,vy:.0022};let XT=null,xt0=0,hardS=1,flipK=1;
+function drawSpecimen(now){const p=focus;if(!p||!p.ar)return;flipK+=((card.classList.contains('flip')?.12:1)-flipK)*.12;const k=ease((now-xt0)/900)*flipK;if(!XT||XT.p!==p){XT={p,...crystal(p.id)};xt0=now;hardS=1}
   const cr=card.getBoundingClientRect(),cx=cr.left+cr.width/2,cy=cr.top+cr.height/2,R0=Math.hypot(cr.width,cr.height)/2+14;
   if(drag!=='x'){rot.y+=rot.vy;rot.x+=( -.32-rot.x)*.01}
   const sc=R0*.98*(.7+.3*k);const P3=XT.V.map(v=>W3(v.map(z=>z*sc),rot,cx,cy));
@@ -52,7 +52,7 @@ function drawSpecimen(now){const p=focus;if(!p||!p.ar)return;const k=ease((now-x
   x.font=`italic 400 11px ${FONT()}`;x.fillStyle=MU(.8*k);[[1,'1 · talc'],[10,'10 · diamond']].forEach(([v,t])=>{const [a,b]=pt(v,R0+18);x.textAlign=v<5?'right':'left';x.fillText(t,a,b)});
   if(h){const [a,b]=pt(hardS,R0);x.fillStyle=TH.bg;x.strokeStyle=C(k);x.beginPath();x.arc(a,b,4,0,7);x.fill();x.stroke();x.fillStyle=C(k);x.beginPath();x.arc(a,b,1.4,0,7);x.fill();
     const [ta,tb]=pt(hardS,R0+20);x.textAlign='center';x.font=`400 12px ${FONT()}`;x.fillText('Mohs '+h,ta,tb);x.textAlign='left'}
-  document.getElementById('sys').innerHTML=`<i>${p.id}</i>  ${XT.s.r}`}
+  document.getElementById('sys').innerHTML=`<i>${(p.m||'').split(',')[0]} · ${p.id}</i>  ${XT.s.r}`}
 
 /* ---------- toolbar under the specimen: lens · locate · note · collect ---------- */
 let COL=store.get('col',null),NOTES=store.get('notes',{});
@@ -109,9 +109,9 @@ cabEl.onclick=e=>{e.stopPropagation();setCab(!cabOn)};
 function openSpecimen(p){setCab(false);const h=hemiOf(p);
   if(level===0){setHemi(h);setTimeout(()=>{goIn(p.cen);setTimeout(()=>setFocus(p),900)},turnT<1?1700:80)}
   else{if(!inHemi(p,hemi))setHemi(h);depthT=p.cen;renderSide();setTimeout(()=>setFocus(p),550)}}
-let crects=[],fronts=[];
+let crects=[],fronts=[],labs=[];
 function drawCab(now){cabK+=((cabOn?1:0)-cabK)*.09;if(cabK<.01)return;regroup();
-  const u=Math.min(LW,LH)*.24,n=G.length,dh=Math.min(.36*u,2.3*u/n),Hh=dh*n,X0=1.45*u,Z0=.5*u,cx=LW/2,cy=LH/2+10,k=ease(cabK);
+  const u=Math.min(LW,LH)*.24,n=G.length,dh=Math.min(.36*u,2.3*u/n),Hh=dh*n,X0=Math.min(1.45*u,LW*.26),Z0=.5*u,cx=LW/2+Math.min(60,LW*.05),cy=LH/2+10,k=ease(cabK);
   cr.x+=(cr.tx-cr.x)*.08;cr.y+=(cr.ty-cr.y)*.08;odS+=(od-odS)*.12;
   const t=now/1000,r={x:cr.x+Math.sin(t/2.7)*.012,y:cr.y+Math.sin(t/3.4)*.02};   // the same slow float as the world
   const pj=v=>W3(v,r,cx,cy+(1-k)*40,2200);const seg=(a,b,al,dash)=>{const A=pj(a),B=pj(b);x.setLineDash(dash||[]);x.strokeStyle=C(al*k);x.beginPath();x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1]);x.stroke();x.setLineDash([])};
@@ -120,16 +120,17 @@ function drawCab(now){cabK+=((cabOn?1:0)-cabK)*.09;if(cabK<.01)return;regroup();
   x.lineWidth=1;
   // the carcass, and the sorting axis running through it
   box(-X0-.06*u,X0+.06*u,-Hh/2-.06*u,Hh/2+.06*u,-Z0-.04*u,Z0,.16);
-  const ax0=[-X0-.32*u,-Hh/2-.55*u,0],ax1=[-X0-.32*u,Hh/2+.55*u,0];seg(ax0,ax1,.35);
+  const ax0=[-X0-.32*u,-Hh/2-.4*u,0],ax1=[-X0-.32*u,Hh/2+.4*u,0];seg(ax0,ax1,.35);
   const S=SORTS[sortK];if(S.ends){const a=pj(ax0),b=pj(ax1);x.font=`italic 400 12px ${FONT()}`;x.fillStyle=MU(k);x.textAlign='center';x.fillText(S.ends[0],a[0],a[1]-8);x.fillText(S.ends[1],b[0],b[1]+16);x.textAlign='left'}
-  crects=[];fronts=[];const lift=[];
+  crects=[];fronts=[];labs=[];const lift=[];
   G.forEach((g,i)=>{opn[i]+=((i===od?1:0)-opn[i])*.1;const y0=-Hh/2+i*dh+.03*u,y1=y0+dh-.06*u,dz=opn[i]*.95*u,f=Math.max(.13,1-Math.abs(i-odS)*.3),empty=!g.its.length;
     const fr=box(-X0,X0,y0,y1,-Z0+dz,Z0+dz,(empty?.22:.42)*f+(cabHoverD===i?.25:0),empty?[2,3]:null,true);fronts.push([fr,i]);
     // a tick on the axis for this drawer, then its name and count, written on the front
     const tk=pj([-X0-.32*u,(y0+y1)/2,0]);x.fillStyle=C((i===od?1:.4)*k);x.beginPath();x.arc(tk[0],tk[1],i===od?2.6:1.6,0,7);x.fill();
-    const lp=pj([X0+.12*u,(y0+y1)/2,Z0+dz]);const blur=FOCUS(i-odS);x.filter=blur>.05?`blur(${(blur*1.6).toFixed(2)}px)`:'none';
-    x.font=`${i===od?'':'italic '}400 12px ${FONT()}`;x.fillStyle=i===od?C(k):MU((.45+.55*f)*k);x.fillText(g.n,lp[0],lp[1]+4);const w=x.measureText(g.n).width;
-    x.font=`400 10px ${FONT()}`;x.fillStyle=MU(f*k);x.fillText(empty?'—':'×'+g.its.length,lp[0]+w+8,lp[1]+4);x.filter='none';
+    const blur=FOCUS(i-odS);x.filter=blur>.05?`blur(${(blur*1.6).toFixed(2)}px)`:'none';x.textAlign='right';
+    x.font=`400 10px ${FONT()}`;x.fillStyle=MU(f*k);const ct=empty?'—':'×'+g.its.length;x.fillText(ct,tk[0]-10,tk[1]+4);const cw=x.measureText(ct).width;
+    x.font=`${i===od?'':'italic '}400 12px ${FONT()}`;x.fillStyle=i===od?C(k):MU((.45+.55*f)*k);x.fillText(g.n,tk[0]-16-cw,tk[1]+4);x.textAlign='left';x.filter='none';
+    labs.push([tk[0]-150,tk[1]-10,150,20,i]);
     // the specimens: a ring each while the drawer is shut, the pictures stand up when it is open
     const nj=g.its.length,sp=Math.min(.44*u,2.6*u/Math.max(1,nj));
     g.its.forEach((p,j)=>{const tx=(j-(nj-1)/2)*sp,ty=y1-.02*u,tz=dz+Z0*.1;p._cv=p._cv||{x:tx,y:ty,z:tz};const q=p._cv;q.x+=(tx-q.x)*.09;q.y+=(ty-q.y)*.09;q.z+=(tz-q.z)*.09;   // re-sorting: they fly to their new drawers
@@ -137,7 +138,7 @@ function drawCab(now){cabK+=((cabOn?1:0)-cabK)*.09;if(cabK<.01)return;regroup();
       if(o>.4&&p.im&&p.im.complete&&p.im.naturalWidth){const hh=Math.min(dh*1.5,sp*.95)*(.6+.4*o),ww=Math.min(hh*(p.ar||1),sp*.9),h2=ww/(p.ar||1);lift.push([p,s[0]-ww/2,s[1]-h2,ww,h2,o])}
       else{x.strokeStyle=C(.6*f*k);x.beginPath();x.arc(s[0],s[1]-4,2.6,0,7);x.stroke()}})});
   // the open drawer is drawn last: pictures, then a slip with the name and the note
-  lift.forEach(([p,X,Y,w,h,o])=>{x.globalAlpha=k*Math.min(1,(o-.4)*2);x.drawImage(p.im,X,Y,w,h);crects.push([X,Y,w,h,p]);
+  lift.forEach(([p,X,Y,w,h,o])=>{x.globalAlpha=k*Math.min(1,(o-.4)*2);x.fillStyle=TH.bg;x.fillRect(X,Y,w,h);x.globalCompositeOperation='multiply';x.drawImage(p.im,X,Y,w,h);x.globalCompositeOperation='source-over';crects.push([X,Y,w,h,p]);
     const hv=cabHover===p;if(hv){x.strokeStyle=C(.45);x.beginPath();x.arc(X+w/2,Y+h/2,Math.hypot(w,h)/2+7,0,7);x.stroke()}
     const n1=nm(p),n2=NOTES[n1]?'“'+NOTES[n1].slice(0,26)+(NOTES[n1].length>26?'…':'')+'”':SORTS[sortK].sub(p);x.font=`400 11px ${FONT()}`;const w1=x.measureText(n1).width;x.font=`italic 400 10px ${FONT()}`;const w2=x.measureText(n2).width;
     const bw=Math.max(w1,w2)+8;x.fillStyle=TH.bg;x.globalAlpha*=.9;x.fillRect(X+w/2-bw/2,Y+h+4,bw,28);x.globalAlpha=k*Math.min(1,(o-.4)*2);
@@ -147,7 +148,8 @@ function drawCab(now){cabK+=((cabOn?1:0)-cabK)*.09;if(cabK<.01)return;regroup();
 /* cabinet input: it takes the pointer while it is open */
 const inPoly=(px,py,q)=>{let c=false;for(let i=0,j=q.length-1;i<q.length;j=i++){const [xi,yi]=q[i],[xj,yj]=q[j];if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)c=!c}return c};
 function cabHit(e){for(let i=crects.length-1;i>=0;i--){const r=crects[i];if(e.clientX>=r[0]&&e.clientX<=r[0]+r[2]&&e.clientY>=r[1]&&e.clientY<=r[1]+r[3])return{p:r[4]}}
-  for(let i=fronts.length-1;i>=0;i--)if(inPoly(e.clientX,e.clientY,fronts[i][0]))return{d:fronts[i][1]};return{}}
+  for(const r of labs)if(e.clientX>=r[0]&&e.clientX<=r[0]+r[2]&&e.clientY>=r[1]&&e.clientY<=r[1]+r[3])return{d:r[4]};
+  let best=null,bd=1e9;fronts.forEach(([q,i])=>{if(!inPoly(e.clientX,e.clientY,q))return;const my=q.reduce((a,v)=>a+v[1],0)/4,d=Math.abs(my-e.clientY);if(d<bd){bd=d;best=i}});return best!=null?{d:best}:{}}
 let drag=null,dx0=0,dy0=0,dm=0;
 const own=e=>e.target.closest&&e.target.closest('#cab,#sort,#tools,#note');
 addEventListener('pointerdown',e=>{if(own(e))return;

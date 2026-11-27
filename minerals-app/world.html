@@ -150,7 +150,8 @@
   #card{position:relative;transform-style:preserve-3d;transition:transform .8s var(--ease);cursor:pointer}
   #card.flip{transform:rotateY(180deg)}
   #card .f,#card .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-  #card .f img{width:100%;height:100%;object-fit:contain;display:block}
+  #card .f{background:var(--bg)}
+  #card .f img{width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:multiply}
   #card .b{transform:rotateY(180deg);background:var(--card);padding:22px;display:flex;flex-direction:column;gap:10px}
   #card .b .t{font-size:15px;font-weight:500;line-height:1.2}
   #card .b .r{display:flex;justify-content:space-between;gap:16px;color:var(--mute)} #card .b .r span:last-child{color:var(--ink);text-align:right}
@@ -211,7 +212,7 @@
   #sort button.on{color:var(--ink);font-style:normal} #sort button.on::before{content:'';display:inline-block;width:6px;height:6px;border:1px solid currentColor;border-radius:50%;margin:0 6px 1px 0}
   #c{transition:opacity .6s,filter .6s}
   body.held #c{opacity:.45;filter:blur(1.2px)}   /* holding one: the world behind goes out of focus */
-  body.cab #c{opacity:.1;filter:blur(3px)}
+  body.cab #c{opacity:0}
   body.cab #labels,body.cab #views,body.cab #quad,body.cab #go,body.cab #focus{opacity:0!important;pointer-events:none!important}
 </style>
 </head>
@@ -246,7 +247,7 @@ const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,S;
 function resize(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';g.setTransform(d,0,0,d,0,0);S=Math.min(W,H)*.36;laid=false}
 let laid=false;resize();addEventListener('resize',resize);
 
-const CENT=['1975–2000','1950–1975','1925–1950','1900–1925','1875–1900','1850–1875','1825–1850','1800–1825','1775–1800'];
+const CENT=['1950–2000','1900–1950','1850–1900','1800–1850','1750–1800'];
 const QUART=[{n:'0°–90°E',s:'Europe · Africa · West Asia'},{n:'90°–180°E',s:'East Asia · Oceania'},{n:'180°–90°W',s:'Pacific · Western Americas'},{n:'90°W–0°',s:'The Americas · Atlantic'}];
 const MATS=['Metal, ceramic, glass','Stone, wood, ivory','Paper, felt','Silk, cotton, textile'];
 const COMBO=['transformed + rigid','formed + rigid','transformed + flexible','formed + flexible'];
@@ -327,7 +328,7 @@ const vIn=p=>[p.ix,p.iy,-(p.cen-depth)*S*.9];
 const orbit=v=>{const cy=Math.cos(oyE*Math.PI/180),sy=Math.sin(oyE*Math.PI/180),cx=Math.cos(oxE*Math.PI/180),sx=Math.sin(oxE*Math.PI/180);
   const x=v[0]*cy+v[2]*sy,z1=-v[0]*sy+v[2]*cy;return [x,v[1]*cx-z1*sx,v[1]*sx+z1*cx]};
 const F=()=>S*3.2;
-let pivZ=0,zf=1,zs=1,SA=0,hovC=null,GM=0;
+let pivZ=0,zf=1,zs=1,SA=0,hovC=null,GM=0,frz=0;
 const THEMES={
   quiet:{n:'Quiet',font:'"Inter Tight", sans-serif',bg:'#0e0e0e',bg2:'rgba(14,14,14,.88)',card:'#1a1a1a',ink:'237,237,237',mute:'125,125,125',faint:'#3a3a3a',mark:'dot',frame:false,upper:false,size:11,
     tab:'globe',rail:'bar',fx:'cipher',turn:1600,depthK:.08,morphK:.06,orbitK:.16,rail_k:.18,rail_d:.66},
@@ -552,10 +553,10 @@ function setFocus(p){focus=p;depthT=p.cen;card.classList.remove('flip');
   card.style.width=ww+'px';card.style.height=h2+'px';fEl.style.transform=`translate(${-ww/2}px,${-h2/2-14}px)`;
   card.querySelector('.f img').src=p.img;
   card.querySelector('.b').innerHTML=`<div class="t">${p.t}</div>
-    <div class="r"><span>Named</span><span>${p.date||'—'}</span></div><div class="r"><span>First found</span><span>${p.c||'—'}</span></div>
-    <div class="r"><span>Class</span><span>${p.m||'—'}</span></div><div class="r"><span>Material</span><span>${MATS[p.mat]}</span></div>
+    <div class="r"><span>Named</span><span>${p.y||'—'}</span></div><div class="r"><span>First found</span><span>${p.c||'—'}</span></div>
+    <div class="r"><span>Class</span><span>${(p.m||'—').split(',')[0]}</span></div><div class="r"><span>Hardness</span><span>Mohs ${(String(p.date).match(/Mohs ([\d.]+)/)||[])[1]||'—'}</span></div>
     <div class="r"><span>Crystal</span><span>${p.id}</span></div>`;
-  cap.innerHTML=`<b>${p.t}</b>  ${p.date||''}`;fEl.classList.add('on');
+  cap.innerHTML=`<b>${p.t}</b>  named ${p.y||''} · first found in ${p.c||'—'}`;fEl.classList.add('on');
   const R0=Math.hypot(ww,h2)/2+14,or=document.getElementById('oring');or.setAttribute('width',R0*2);or.setAttribute('height',R0*2);or.style.left=(ww/2-R0)+'px';or.style.top=(h2/2-R0)+'px';
   const c=or.querySelector('circle');c.setAttribute('cx',R0);c.setAttribute('cy',R0);c.setAttribute('r',R0-1);c.setAttribute('transform',`rotate(135 ${R0} ${R0})`);
   or.classList.remove('draw');fEl.classList.remove('lit');void or.getBoundingClientRect();or.classList.add('draw');setTimeout(()=>fEl.classList.add('lit'),30);renderSide()}
@@ -585,7 +586,7 @@ cv.addEventListener('dblclick',e=>{if(level===0){vx=vy=0;oxT=0;oyT=Math.round(oy
 let wl=0;addEventListener('wheel',e=>{if(!level)return;
   if(e.ctrlKey){const f=Math.exp(-e.deltaY*.01),nz=Math.max(1,Math.min(4,zmT*f));   // pinch / ctrl-scroll: move in towards the cursor
     zmT=nz;panXT=panYT=0;e.preventDefault();return}
-  const n=Date.now();if(n-wl<180||Math.abs(e.deltaY)<4)return;wl=n;unfocus();
+  const n=Date.now();if(n-wl<110||Math.abs(e.deltaY)<2)return;wl=n;unfocus();
   depthT=Math.max(0,Math.min(CENT.length-1,depthT+(e.deltaY>0?1:-1)));renderSide()},{passive:false});
 addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(card.classList.contains('flip'))card.classList.remove('flip');else if(focus)unfocus();else if(zmT>1.05){zmT=1;panXT=panYT=0}else if(level)goOut()}
@@ -624,14 +625,15 @@ function labelAt(i,p,html,op,align){let el=labelsEl.children[i];if(!el){el=docum
   if(!p||op<.01){el.style.opacity=0;return}if(el._src!==html){el._src=html;el._k=1}el._k=(el._k||0)*(TH.fx==='ink'?.95:.92);
   if(TH.fx==='ink'){if(el._h!==html){el.innerHTML=html;el._h=html}el.style.filter='none'}   // paper: words blur and fade like ink, never break into code
   else{el.style.filter='none';if(el._h!==html){el.innerHTML=html;el._h=html}}el.style.opacity=op;const BR=document.body.classList.contains('bare');   // with the overlay's bars on top, labels keep out of the bar bands
-  el.style.left=(BR?Math.max(p[0],84):p[0])+'px';el.style.top=(BR?Math.max(p[1],104):p[1])+'px';el.style.textAlign=align[2]||'left';el.style.transform=`translate(${align[0]},${align[1]})`}
+  el.style.left=(BR?Math.max(p[0],84):p[0])+'px';el.style.top=(BR?Math.max(p[1],104):p[1])+'px';el.style.textAlign=align[2]||'left';el.style.transform=`translate(${align[0]},${align[1]})`;
+  const rr=el.getBoundingClientRect();if(rr.right>innerWidth-10)el.style.left=(parseFloat(el.style.left)-(rr.right-innerWidth+10))+'px'}
 function frame(now){
   if(!laid&&P.length)layout();
   if(turnT<1){turnT=Math.min(1,(now-turnStart)/TURN);const t=ez(turnT);yaw=turnFrom+(turnTo-turnFrom)*t;pitch=90-62*Math.sin(Math.PI*turnT)}
   if(down===null&&!level&&(Math.abs(vx)+Math.abs(vy)>.02)){oyT+=vy;oxT=Math.max(-88,Math.min(88,oxT+vx));vx*=.94;vy*=.94}
   TURN=TH.turn;morph+=(morphT-morph)*TH.morphK;depth+=(depthT-depth)*TH.depthK;ox+=(oxT-ox)*TH.orbitK;oy+=(oyT-oy)*TH.orbitK;
   zm+=(zmT-zm)*.12;panX+=(panXT-panX)*.12;panY+=(panYT-panY)*.12;
-  const br=level?.5:1;oxE=ox+Math.sin(now/2700)*1.3*br-myN*4*br;oyE=oy+Math.sin(now/3400)*2*br+mxN*6*br;
+  frz+=((hover&&!level?1:0)-frz)*.12;const br=(level?.5:1)*(1-frz);oxE=ox+Math.sin(now/2700)*1.3*br-myN*4*br;oyE=oy+Math.sin(now/3400)*2*br+mxN*6*br;
   const free=Math.abs(ox)>2||Math.abs(((oy%360)+540)%360-180)>2,settled=turnT>=1&&level===0&&!free,_l=(lift+=((settled?-Math.min(W,H)*.05:0)-lift)*.08),m=ez(Math.min(1,morph));
   g.clearRect(0,0,W,H);let li0=0;
   {const op=document.getElementById('side').classList.contains('open'),pw=350;SO.x+=((op?pw/2:0)-SO.x)*.12;SO.s+=((op?Math.min(1,(W-pw-40)/(W-40)):1)-SO.s)*.12}
@@ -650,7 +652,8 @@ function frame(now){
   const tA=viewDisc(0,0,AL0),tB=viewDisc(0,0,-AL0),iA=[0,0,depth*S*.9+S*.3],iB=[0,0,-(CENT.length-1-depth)*S*.9-S*.3];
   const axA=tA.map((x,k)=>x+(iA[k]-x)*m),axB=tB.map((x,k)=>x+(iB[k]-x)*m);line(axA,axB,.22);
   const sideOn=Math.min(1,(Math.abs(ox)+Math.abs(oy))/40)*m;
-  if(m<.5){labelAt(li0++,proj(tA),'<span>Newer</span>',1-m*2,['-50%','-130%','center']);labelAt(li0++,proj(tB),'<span>Older</span>',1-m*2,['-50%','30%','center'])}
+  {const _a=proj(tA),_b=proj(tB);var _apart=_a&&_b&&Math.hypot(_a[0]-_b[0],_a[1]-_b[1])>70}
+  if(m<.5){labelAt(li0++,proj(tA),'<span>Newer</span>',(1-m*2)*(_apart?1:0),['-50%','-130%','center']);labelAt(li0++,proj(tB),'<span>Older</span>',(1-m*2)*(_apart?1:0),['-50%','30%','center'])}
   // inside: one frame per century, the corners run off into the past
   if(morph>.02){const FR=AL,zOf=i=>-(i-depth)*S*.9;
     [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>line([a*FR,b*FR,zOf(0)],[a*FR,b*FR,zOf(CENT.length-1)],.08*m));
@@ -660,7 +663,7 @@ function frame(now){
       if(p&&fa>.02){const am=FOCUS(i-depth);c=TH.fx==='ink'?c:blurCode(c,am,i);g.filter=TH.fx==='ink'&&am>.02?`blur(${(am*2).toFixed(2)}px)`:'none';g.fillStyle=`rgba(${i===Math.round(depth)?TH.ink:TH.mute},${fa})`;g.font=`400 11px ${TH.font}`;g.fillText(c,p[0]+8,p[1]+17);g.filter='none'}})}
   // objects
   rects=[];P.forEach(q=>q.sa=0);   // sx/sy/sa: where each piece is on screen this frame, read by an overlay in bare mode
-  const T=performance.now()/1000,dr=Math.min(W,H)*.014*(1-m);
+  const T=performance.now()/1000,dr=Math.min(W,H)*.014*(1-m)*(1-frz);
   const items=P.map((p,i)=>{const ph=i*2.399;p.tw=.6+.4*Math.sin(T*(.7+(i%5)*.13)+ph);const a=viewDisc((p.gx||0)+Math.sin(T*.31+ph)*dr,(p.gz||0)+Math.cos(T*.27+ph*1.7)*dr,(p.dy||0)+Math.sin(T*.23+ph*.6)*dr*1.4),b=vIn(p);const v=a.map((x,k)=>x+(b[k]-x)*m);return [p,proj(v),v]}).filter(x=>x[1]).sort((A,B)=>A[1][3]-B[1][3]);
   // spokes on the globe: every object hangs off the centre on its own line, like a direction on a compass
   if(false)items.forEach(([p,s])=>{const lit=inHemi(p,hemi);const al=(1-m)*(turnT<1||free?.1:lit?.16:.03);if(al<.01)return;
@@ -678,13 +681,13 @@ function frame(now){
     // inside, only the century you are in shows its pictures; the others wait as points along the axis
     if(level===1&&m>.35&&Math.abs(p.cen-depth)>.55&&p!==hover){const r=1.6*Math.max(.6,s[2]);g.fillStyle=`rgba(${TH.ink},${a*.8})`;MARK(s[0],s[1],r);rects.push([s[0]-6,s[1]-6,12,12,p]);return}
     if(m<.35){const r=(my?2.2:1.6)*Math.max(.7,s[2]);g.fillStyle=`rgba(${TH.ink},${a*(p===hover?1:.85*p.tw)*(1-m/.35)})`;MARK(s[0],s[1],p===hover?r*1.8:r*(.8+.35*p.tw),p===hover);
-      rects.push([s[0]-8,s[1]-8,16,16,p]);
+      rects.push([s[0]-12,s[1]-12,24,24,p]);
       if(p===hover&&level===0)_ps=[p,s];
       return}
     const near=Math.max(0,1-Math.abs(p.cen-depth)),B0=6,B1=Math.min(26+50*near,(near>.5?(p.cell||60)*.8:26)),B=B0+(B1-B0)*m,sq=Math.sqrt(p.ar||1),hh=Math.max(8,B/sq*s[2]),ww=hh*p.ar,x=s[0]-ww/2,y=s[1]-hh/2;
     const lit=level===0||p===hover||(level===1&&Math.abs(p.cen-depth)<.5);
     g.globalAlpha=a;g.filter=p===hover?'none':TH.img&&level===1?TH.img:lit?'none':'grayscale(1) brightness(.9)';
-    if(p.im.complete&&p.im.naturalWidth)g.drawImage(p.im,x,y,ww,hh);else{g.fillStyle='#333';g.fillRect(x,y,ww,hh)}
+    if(p.im.complete&&p.im.naturalWidth){g.fillStyle=TH.bg;g.fillRect(x,y,ww,hh);g.globalCompositeOperation='multiply';g.drawImage(p.im,x,y,ww,hh);g.globalCompositeOperation='source-over'}else{g.fillStyle='#333';g.fillRect(x,y,ww,hh)}
     g.filter='none';g.globalAlpha=1;
     rects.push([x,y,ww,hh,p]);
     if(level===1&&hovQ!=null&&p.mat===hovQ&&Math.abs(p.cen-depth)<.5){g.strokeStyle=`rgba(${TH.ink},.45)`;g.lineWidth=1;g.beginPath();g.arc(s[0],s[1],Math.hypot(ww,hh)/2+6,0,7);g.stroke()}   // pointing at a material ring its pieces in this century
@@ -698,10 +701,11 @@ function frame(now){
       const n=String(P.indexOf(p)+1).padStart(2,'0');g.fillText(close||p===hover?`${n}  ${p.t.slice(0,26)}`:n,x,y+hh+12);
       if(close||p===hover){g.fillText(p.date?String(p.date).slice(0,28):'',x,y+hh+24)}}
   });
+  if(focus||document.body.classList.contains('cab'))P.forEach(q=>q.sa=0);
   if(_ps){SHOW(..._ps);_ps=null}
   if(_po){const [p,x,y,ww,hh]=_po;_po=null;if(poLast!==p){poLast=p;poT=performance.now()}const t=Math.min(1,(performance.now()-poT)/600),e=1-Math.pow(1-t,3);
     // the picture comes to the front, a ring is drawn once around it starting from its lower-left, the label hangs off where the ring began
-    if(p.im.complete&&p.im.naturalWidth)g.drawImage(p.im,x,y,ww,hh);
+    if(p.im.complete&&p.im.naturalWidth){g.fillStyle=TH.bg;g.fillRect(x,y,ww,hh);g.globalCompositeOperation='multiply';g.drawImage(p.im,x,y,ww,hh);g.globalCompositeOperation='source-over'}
     const cx=x+ww/2,cy=y+hh/2,R=Math.hypot(ww,hh)/2+10,a0=Math.PI*.75,px=cx+R*Math.cos(a0),py=cy+R*Math.sin(a0);
     g.strokeStyle=`rgba(${TH.ink},.38)`;g.lineWidth=1;g.beginPath();g.arc(cx,cy,R,a0,a0+e*Math.PI*2);g.stroke();
     g.fillStyle=`rgba(${TH.ink},1)`;g.beginPath();g.arc(px,py,2.5*e,0,7);g.fill();
