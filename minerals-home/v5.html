@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minerals — v5 · how a place shows its minerals</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ebe9e3;--ink:#1c1b18;--mute:#767168;--faint:#b9b4a9;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);overflow:hidden;font:400 13px/1.3 "Newsreader",serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+canvas#c{position:fixed;inset:0}
+button{all:unset;cursor:pointer}
+#top{position:fixed;left:0;right:0;top:22px;display:flex;justify-content:center;gap:12px;align-items:center;color:var(--faint);z-index:3}
+#top button{color:var(--mute);font-style:italic;transition:color .2s} #top button:hover{color:var(--ink)} #top button:active{opacity:.5}
+#top button.on{color:var(--ink);font-style:normal} #top button.on::before{content:'';display:inline-block;width:6px;height:6px;border:1px solid currentColor;border-radius:50%;margin:0 6px 1px 0}
+#brand{position:fixed;left:26px;top:20px;z-index:3} #brand b{font-weight:400;font-size:17px;letter-spacing:.01em} #brand span{display:block;color:var(--mute);font-style:italic;margin-top:2px}
+#card{position:fixed;right:24px;bottom:24px;width:300px;padding:6px 15px 14px;background:rgba(235,233,227,.94);z-index:4;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .4s var(--ease);pointer-events:none}
+#card.on{opacity:1;transform:none;pointer-events:auto}
+#card canvas{display:block;width:270px;height:170px}
+#card h2{font-weight:400;font-size:19px;margin-top:2px}
+#card .hb{display:flex;gap:10px;margin:2px 0 8px;color:var(--mute);font-style:italic;flex-wrap:wrap} #card .hb button{color:var(--mute)} #card .hb button.on{color:var(--ink);font-style:normal} #card .hb button:hover{color:var(--ink)}
+#card .r{display:flex;justify-content:space-between;gap:14px;padding:3px 0;color:var(--mute);border-top:1px solid rgba(28,27,24,.08)} #card .r span:last-child{color:var(--ink);text-align:right}
+#card .sw{display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px} #card .sw i{width:9px;height:9px;border-radius:50%;border:1px solid rgba(28,27,24,.25)}
+#card .nt{color:var(--mute);font-style:italic;margin-top:8px;line-height:1.35}
+#tip{position:fixed;pointer-events:none;z-index:5;white-space:nowrap;opacity:0;transition:opacity .15s;font-size:12px}
+#tip b{font-weight:400} #tip span{color:var(--mute);font-style:italic}
+#tool{position:fixed;z-index:3;display:none;transform:translate(-50%,0);text-align:center;white-space:nowrap;cursor:grab;user-select:none}
+#tool .k{width:14px;height:14px;border:1px solid var(--ink);border-radius:50%;margin:0 auto 6px;background:var(--bg);position:relative}
+#tool .k::after{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--ink)}
+#tool b{font-weight:400} #tool span{display:block;color:var(--mute);font-style:italic}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="brand"><b>Minerals</b><span id="sub"></span></div>
+<nav id="lay" style="position:fixed;right:26px;top:22px;z-index:3;display:flex;gap:10px;font-style:italic;color:#767168"></nav><nav id="top"><button data-v="colour">Colour</button><span>·</span><button data-v="place">Place</button><span>·</span><button data-v="hard">Hardness</button></nav>
+<div id="tip"></div><div id="tool"><div class="k"></div><b></b><span></span></div>
+<div id="card"><canvas id="cc" width="540" height="340"></canvas><h2></h2><div class="hb"></div><div class="rows"></div><div class="nt"></div></div>
+<script>
+/* Three ways into the same 107 minerals. At rest every mineral is the small circle of the nav, its centre its colour;
+   point at one and the circle opens into its own crystal, drawn in ink from its real crystal forms. */
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,DPR;
+function rs(){DPR=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';g.setTransform(DPR,0,0,DPR,0,0);lay()}
+const INK='28,27,24',MUTE='118,113,104',FONT='"Newsreader", serif';
+let D=[],LAND=[],view='colour',mx=-1,my=-1,hov=null,pin=null,T0=performance.now();
+const ease=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+const pale=h=>{const n=parseInt(h.slice(1),16);return((n>>16)+(n>>8&255)+(n&255))/3>190};
+/* ---------- drawing: the ring, and the crystal in ink ---------- */
+function rot(v,rx,ry){const c=Math.cos(ry),s=Math.sin(ry),x=v[0]*c+v[2]*s,z=-v[0]*s+v[2]*c,c2=Math.cos(rx),s2=Math.sin(rx);return[x,v[1]*c2-z*s2,v[1]*s2+z*c2]}
+function edges(h){if(h._E)return h._E;const E=new Map();h.F.forEach((f,fi)=>f.forEach((a,i)=>{const b=f[(i+1)%f.length],k=a<b?a+'-'+b:b+'-'+a;E.has(k)?E.get(k).push(fi):E.set(k,[a,b,fi])}));return h._E=[...E.values()]}
+// P: points already on screen (x, y, depth toward you). Edges between two faces turned away are hidden, drawn dashed
+function ink(ctx,h,P,al,lw){const C=P.reduce((a,p)=>[a[0]+p[0]/P.length,a[1]+p[1]/P.length,a[2]+p[2]/P.length],[0,0,0]);
+  const front=h.F.map(f=>{const a=P[f[0]],b=P[f[1]],c=P[f[2]];let n=[(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]),(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]),(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])];
+    let m=[0,0,0];f.forEach(i=>{m[0]+=P[i][0]/f.length;m[1]+=P[i][1]/f.length;m[2]+=P[i][2]/f.length});if((m[0]-C[0])*n[0]+(m[1]-C[1])*n[1]+(m[2]-C[2])*n[2]<0)n=n.map(v=>-v);return n[2]>0});
+  ctx.lineWidth=(lw||1)*.6;edges(h).forEach(e=>{const f1=front[e[2]],f2=front[e[3]];if(!f1&&!f2)return;ctx.strokeStyle=`rgba(${INK},${al*(f1!==f2?.6:.42)})`;ctx.beginPath();ctx.moveTo(P[e[0]][0],P[e[0]][1]);ctx.lineTo(P[e[1]][0],P[e[1]][1]);ctx.stroke()})}
+function dot(ctx,x,y,col,r,al){ctx.globalAlpha=al;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();if(pale(col)){ctx.strokeStyle=`rgba(${INK},.45)`;ctx.lineWidth=.7;ctx.stroke()}ctx.globalAlpha=1}
+// o carries its own opening spring o.k; returns nothing, records nothing
+function mark(o,x,y,col,al,open,t,s){o.k=(o.k||0)+((open?1:0)-(o.k||0))*.16;const k=o.k,m=o.m;
+  if(!m.x){g.globalAlpha=al;g.strokeStyle=`rgba(${INK},.62)`;g.lineWidth=1;g.beginPath();g.arc(x,y,6+4*k,0,7);g.stroke();g.globalAlpha=1;dot(g,x,y,col,2.5+1.5*k,al);return}   // no regular crystal shape: it stays a circle
+  if(k<.97){g.globalAlpha=al*(1-k);g.strokeStyle=`rgba(${INK},.62)`;g.lineWidth=1;g.beginPath();g.arc(x,y,6,0,7);g.stroke();g.globalAlpha=1;dot(g,x,y,col,2.5,al*(1-k))}
+  if(k>.03){const h=m.habits[0],sz=(s||20)*(.35+.65*k),ry=t/3200+(o.seed||0);const P=h.V.map(v=>{const q=rot(v,-.38,ry);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=k*al;ink(g,h,P,1,1);g.globalAlpha=1;dot(g,x+sz*1.1,y+sz*1.05,col,2.5,k*al)}}
+
+/* ---------- the card: the held mineral turns slowly, in ink ---------- */
+const card=document.getElementById('card'),cc=document.getElementById('cc'),cx=cc.getContext('2d');let cardM=null,cardHab=0;
+function showCard(m){if(cardM!==m){cardM=m;cardHab=0;const seen=new Set();m._hab=m.habits.map((h,i)=>[h.l.split(/ with | and |,|;| — /)[0].toLowerCase().trim(),i]).filter(([l])=>!seen.has(l)&&seen.add(l)).slice(0,3)}card.classList.add('on');
+  card.querySelector('h2').textContent=m.n;
+  cc.style.display=m.x?'block':'none';
+  card.querySelector('.hb').innerHTML=!m.x?`<span>no regular crystal shape · usually ${m.habits[0].l.toLowerCase()}</span>`:m._hab.map(([l,i])=>`<button data-i="${i}" class="${i===cardHab?'on':''}">${l}</button>`).join('');
+  card.querySelectorAll('.hb button').forEach(b=>b.onclick=()=>{cardHab=+b.dataset.i;showCard(m)});
+  card.querySelector('.rows').innerHTML=`<div class="r"><span>Colour</span><span><span class="sw">${m.colors.map(c=>`<i style="background:${c.hex}"></i>`).join('')}</span>${m.colors[0].c.toLowerCase()}${m.colors.length>1?' …':''}</span></div>
+    <div class="r"><span>Hardness</span><span>Mohs ${m.h}</span></div><div class="r"><span>Crystal</span><span>${m.sys}</span></div>
+    <div class="r"><span>Found in</span><span>${m.loc.slice(0,3).map(l=>l.n).join(', ')}${m.loc.length>3?' +'+(m.loc.length-3):''}</span></div><div class="r"><span>Formula</span><span>${m.chem}</span></div>${m.var&&m.var.length?`<div class="r"><span>Varieties</span><span>${m.var.map(v=>v.toLowerCase()).join(', ')}</span></div>`:''}`;
+  card.querySelector('.nt').textContent=(m.note||m.desc).split(/(?<=\.)\s/)[0]}
+function hideCard(){if(!pin){card.classList.remove('on');cardM=null}}
+function drawCard(t){if(!cardM||!cardM.x)return;cx.setTransform(2,0,0,2,0,0);cx.clearRect(0,0,270,170);const h=cardM.habits[cardHab],s=Math.min(62,74/Math.max(...h.V.map(v=>Math.hypot(...v))));
+  const P=h.V.map(v=>{const q=rot(v,-.38,t/2600);return[135+q[0]*s,86+q[1]*s,q[2]]});ink(cx,h,P,1,1)}
+
+/* ---------- A · Colour: a colour wheel. Hue goes round, the vivid sit at the rim, the pale toward the middle;
+   colourless, grey and black stand on the axis through the centre ---------- */
+function hsv(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)/255,g2=(n>>8&255)/255,b=(n&255)/255,mx2=Math.max(r,g2,b),mn=Math.min(r,g2,b),d=mx2-mn;let h=0;
+  if(d){h=mx2===r?((g2-b)/d)%6:mx2===g2?(b-r)/d+2:(r-g2)/d+4;h*=60;if(h<0)h+=360}return{h,s:mx2?d/mx2:0,v:mx2}}
+let A=null;
+function layColour(){const cx0=W/2,cy0=H/2+16,R=Math.min(W,H)*.33,it=[],by={};
+  D.forEach(m=>m.colors.forEach(c=>(by[c.hex]=by[c.hex]||[]).push({m,col:c.hex,cn:c.c,v:c.v,seed:Math.random()*6})));
+  Object.entries(by).forEach(([hex,list])=>{const q=hsv(hex);let bx,byy;
+    if(q.s<.14){bx=cx0;byy=cy0+(.5-q.v)*R*.62}   // colourless at the top of the middle, black at the bottom
+    else{const a=(q.h-90)*Math.PI/180,r=R*(.6+.4*Math.min(1,q.s*q.v*1.3));bx=cx0+Math.cos(a)*r;byy=cy0+Math.sin(a)*r}
+    list.forEach((o,i)=>{o.ach=q.s<.14;const rr=Math.sqrt(i)*8.2,aa=i*2.39996;o.tx=bx+Math.cos(aa)*rr;o.ty=byy+Math.sin(aa)*rr;it.push(o)})});   // each colour is a small sunflower of circles
+  for(let n=0;n<60;n++)for(let i=0;i<it.length;i++)for(let j=i+1;j<it.length;j++){const a=it[i],b=it[j],dx=b.tx-a.tx,dy=b.ty-a.ty,d=Math.hypot(dx,dy);
+    if(d<14.5&&d>0){const p=(14.5-d)/2;a.tx-=dx/d*p;a.ty-=dy/d*p;b.tx+=dx/d*p;b.ty+=dy/d*p}}
+  it.forEach(o=>{o.x=cx0;o.y=cy0});A={cx0,cy0,R,it}}
+const HUES=['#b8322f','#e0782f','#e2c13b','#9aab3c','#3f8a4c','#3b9a93','#3b63b4','#7a4d9f','#e29aae'].map((h,i)=>[hsv(h).h,['red','orange','yellow','yellow-green','green','blue-green','blue','violet','pink'][i]]);
+function drawColour(t){const {cx0,cy0,R,it}=A,k=ease((t-T0)/1300);
+  const hm0=hov&&hov.m,lit=hm0?A.it.filter(o=>o.m===hm0&&!o.ach).map(o=>hsv(o.col).h):[];
+  {const dx=mx-cx0,dy=my-cy0,r=Math.hypot(dx,dy);A.ph=(!hm0&&r>R*.5&&r<R*1.3)?((Math.atan2(dy,dx)*180/Math.PI+90)+360)%360:null}
+  A.phS=A.ph==null?null:(A.phS==null?A.ph:A.phS+(((A.ph-A.phS+540)%360)-180)*.25);
+  const dh=(a,b)=>Math.abs(((a-b+540)%360)-180);
+  {const e=ease((t-T0-500)/1400),a0=-Math.PI/2,RR=R*1.12;
+   // one continuous line: a conic gradient round the circle, faint; the lit stretch is the same line drawn again, saturated
+   const cg=al=>{const c=g.createConicGradient(a0,cx0,cy0);for(let d=0;d<=360;d+=30)c.addColorStop(d/360,`hsla(${d%360},${al>.5?65:45}%,${al>.5?50:56}%,${al})`);return c};
+   g.lineWidth=1.1;   // nothing at rest; only the stretch you point at, or the colours of the mineral you hold, is drawn
+   const span=[];lit.forEach(h=>span.push([h-9,h+9]));if(A.phS!=null)span.push([A.phS-12,A.phS+12]);
+   g.strokeStyle=cg(.95);span.forEach(([d1,d2])=>{g.beginPath();g.arc(cx0,cy0,RR,(d1-90)*Math.PI/180,(d2-90)*Math.PI/180);g.stroke()});g.lineWidth=1;
+   if(hm0)A.it.filter(o=>o.m===hm0&&!o.ach).forEach(o=>{const a=(hsv(o.col).h-90)*Math.PI/180;g.strokeStyle=`rgba(${INK},.35)`;g.setLineDash([1,3]);g.beginPath();g.moveTo(o.x,o.y);g.lineTo(cx0+Math.cos(a)*R*1.1,cy0+Math.sin(a)*R*1.1);g.stroke();g.setLineDash([])});   // each of its colours reaches out to its place on the band
+
+   const w=1-ease((t-T0)/900);if(w>0){g.fillStyle=`rgba(255,255,255,${w})`;g.beginPath();g.arc(cx0,cy0,10+30*(1-w),0,7);g.fill();g.strokeStyle=`rgba(${INK},${.4*w})`;g.stroke()}
+   const ra=(305-90)*Math.PI/180,p1=[cx0+Math.cos(ra)*R*.5,cy0+Math.sin(ra)*R*.5],p2=[cx0+Math.cos(ra)*R*1.04,cy0+Math.sin(ra)*R*1.04];
+   g.strokeStyle=`rgba(${INK},${.3*k})`;g.setLineDash([2,3]);g.beginPath();g.moveTo(...p1);g.lineTo(...p2);g.stroke();g.setLineDash([]);
+   lab(p1[0]+6,p1[1]+14,'pale',MUTE,.8*k,'italic 12px');lab(p2[0]+8,p2[1]+4,'vivid',MUTE,.8*k,'italic 12px')}
+  g.strokeStyle=`rgba(${INK},.12)`;g.beginPath();g.arc(cx0,cy0,R*.45,0,7);g.stroke();
+  g.beginPath();g.moveTo(cx0,cy0-R*.45);g.lineTo(cx0,cy0+R*.45);g.stroke();
+  HUES.forEach(([h,n])=>{const a=(h-90)*Math.PI/180;lab(cx0+Math.cos(a)*R*1.25,cy0+Math.sin(a)*R*1.25+4,n,MUTE,.8*k,'italic 12px','center')});
+  lab(cx0-R*.5,cy0-R*.25,'colourless · white',MUTE,.8*k,'italic 12px','right');lab(cx0-R*.5,cy0+R*.25,'black · grey · metal',MUTE,.8*k,'italic 12px','right');
+  const hm=hov&&hov.m,hits=[];
+  it.forEach((o,i)=>{if(t-T0<500)return;o.x+=(o.tx-o.x)*(.05+.0004*i);o.y+=(o.ty-o.y)*(.05+.0004*i);const same=hm===o.m,near=A.phS==null||(!o.ach&&dh(hsv(o.col).h,A.phS)<22),al=hm?(same?1:.25):near?1:.3;
+    mark(o,o.x,o.y,o.col,al*k,same&&hov===o,t,22);hits.push([o.x,o.y,8,o])});
+  if(hm){const pts=it.filter(o=>o.m===hm);if(pts.length>1){g.strokeStyle=`rgba(${INK},.45)`;g.setLineDash([2,3]);g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.setLineDash([]);
+    pts.forEach(p=>{if(p!==hov){g.strokeStyle=`rgba(${INK},.8)`;g.beginPath();g.arc(p.x,p.y,8.5,0,7);g.stroke()}});
+    lab(hov.x+18,hov.y+30,`${hm.n} comes in ${pts.length} colours${hm.var&&hm.var.length?' · '+hm.var.slice(0,3).map(v=>v.toLowerCase()).join(', ')+(hm.var.length>3?'…':''):''}`,INK,1,'italic 12px')}}
+  HITS=hits}
+
+/* ---------- D · Place: the earth, with its minerals growing out of it. At rest each place is a little cluster of circles;
+   point at a place and its circles open into crystals standing up out of the ground ---------- */
+let G={lon:-20,lat:-28,vl:0,va:0,drag:false},PL=null;
+const ll2v=(lat,lon)=>{const a=lat*Math.PI/180,o=lon*Math.PI/180;return[Math.cos(a)*Math.sin(o),-Math.sin(a),Math.cos(a)*Math.cos(o)]};
+function layPlace(){const by={};D.forEach(m=>m.loc.forEach(l=>{(by[l.n]=by[l.n]||{n:l.n,lat:l.lat,lon:l.lon,ms:[]}).ms.push({m,seed:Math.random()*6})}));PL=Object.values(by)}
+function gview(v){const a=G.lon*Math.PI/180,b=G.lat*Math.PI/180;let x=v[0]*Math.cos(a)-v[2]*Math.sin(a),z=v[0]*Math.sin(a)+v[2]*Math.cos(a),y=v[1];return[x,y*Math.cos(b)-z*Math.sin(b),y*Math.sin(b)+z*Math.cos(b)]}
+let PF=null;G.z=1;const LAY=(new URLSearchParams(location.search).get('lay'))||'tray';
+function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx0=W/2,cy0=H/2+14,k=ease((t-T0)/1400);
+  if(PF){const dl=((PF.lon-G.lon+540)%360)-180;G.lon+=dl*.09;G.lat+=(-PF.lat-G.lat)*.09;G.vl=G.va=0}
+  else if(!G.drag){G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.vl=G.vl*.95+(hov||hovPlace?0:.05)*.05;G.va*=.92}
+  g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=1;g.beginPath();g.arc(cx0,cy0,R,0,7);g.stroke();
+  const pr=v=>{const q=gview(v);return[cx0+q[0]*R,cy0+q[1]*R,q[2]]};
+  const path=(pts)=>{g.beginPath();let pen=0;pts.forEach(p=>{if(p[2]>0){pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);pen=1}else pen=0});g.stroke()};
+  g.strokeStyle=`rgba(${INK},.07)`;for(let lo=-180;lo<180;lo+=30){const a=[];for(let la=-90;la<=90;la+=5)a.push(pr(ll2v(la,lo)));path(a)}
+  for(let la=-60;la<=60;la+=30){const a=[];for(let lo=-180;lo<=180;lo+=5)a.push(pr(ll2v(la,lo)));path(a)}
+  g.strokeStyle=`rgba(${INK},.38)`;LAND.forEach(ring=>path(ring.map(([lo,la])=>pr(ll2v(la,lo)))));
+  const hits=[],hm=hov&&hov.m;
+  PL.forEach(pl=>{const u=ll2v(pl.lat,pl.lon),q=gview(u);pl.sx=cx0+q[0]*R;pl.sy=cy0+q[1]*R;pl.sz=q[2];if(q[2]<.02)return;
+    let e1=[u[2],0,-u[0]];const l1=Math.hypot(...e1)||1;e1=e1.map(x=>x/l1);const e2=[u[1]*e1[2]-u[2]*e1[1],u[2]*e1[0]-u[0]*e1[2],u[0]*e1[1]-u[1]*e1[0]];
+    const open=false,n=pl.ms.length;pl.o=(pl.o||0)+((open?1:0)-(pl.o||0))*.12;const fade=Math.min(1,(q[2]-.02)*5)*k;
+    // at rest a place is one circle, its size the number of minerals found there; pointing at it opens it into its crystals
+    const holds=hm&&pl.ms.some(o=>o.m===hm),rr=2.5+Math.sqrt(n)*2.3;
+    if(pl.o<.97){g.globalAlpha=fade*(1-pl.o)*(hm?(holds?1:.3):hovPlace&&!open?.45:1);g.strokeStyle=`rgba(${INK},${holds?.85:.5})`;g.lineWidth=holds?1:.7;g.beginPath();g.arc(pl.sx,pl.sy,rr,0,7);g.stroke();g.globalAlpha=1;g.lineWidth=1}
+    if(pl.o<.05)return;
+    pl.ms.forEach((o,i)=>{const r=Math.sqrt(i+.5)*(.017+.03*pl.o),ang=i*2.39996,base=[0,1,2].map(j=>u[j]*(1+.01+.07*pl.o)+(e1[j]*Math.cos(ang)+e2[j]*Math.sin(ang))*r);
+      const b=gview(base),x=cx0+b[0]*R,y=cy0+b[1]*R,col=o.m.colors[0].hex,al=fade*(hm?(hm===o.m?1:.25):hovPlace&&!open?.35:1);
+      if((pl.o>.05||hm===o.m)&&o.m.x){   // open: the crystal stands on the ground, its c axis pointing away from the centre
+        const h=o.m.habits[0],sz=R*.03*Math.max(pl.o,hm===o.m?1:0),spin=t/5000+o.seed,c=Math.cos(spin),sn=Math.sin(spin);
+        const P=h.V.map(v=>{const X=v[0]*c+v[2]*sn,Z=-v[0]*sn+v[2]*c,Y=v[1];const w=[0,1,2].map(j=>base[j]*R+(e1[j]*X-Y*u[j]+e2[j]*Z)*sz+u[j]*sz);const p=gview(w);return[cx0+p[0],cy0+p[1],p[2]]});
+        g.globalAlpha=al;ink(g,h,P,1,.9);g.globalAlpha=1}
+      else{g.globalAlpha=al*pl.o;g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=.7;g.beginPath();g.arc(x,y,3,0,7);g.stroke();g.globalAlpha=1}
+      hits.push([x,y,open?7:4,{m:o.m,col,pl}])})});
+  if(hovPlace&&hovPlace.sz>0&&hovPlace!==PF){g.strokeStyle=`rgba(${INK},.9)`;g.beginPath();g.arc(hovPlace.sx,hovPlace.sy,2.5+Math.sqrt(hovPlace.ms.length)*2.3+3,0,7);g.stroke();lab(hovPlace.sx+16+Math.sqrt(hovPlace.ms.length)*2.3,hovPlace.sy+4,`${hovPlace.n}  ×${hovPlace.ms.length}`,INK,1,'14px')}
+  if(PF){const e=ease(Math.min(1,(G.z-1)/.9)),px=PF.sx,py=PF.sy,n=PF.ms.length,L=LAY;
+    const ms=PF.ms.slice().sort((a,b)=>a.m.h-b.m.h);
+    // where each mineral stands, for the layout chosen
+    let pos=[],title=[px,py-210];
+    if(L==='ring'){const rr=Math.min(H*.36,Math.max(130,n*54/(2*Math.PI)))*e;pos=ms.map((o,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;return{o,x:px+Math.cos(a)*rr,y:py+Math.sin(a)*rr,la:[Math.cos(a)*36,Math.sin(a)*36+4],al:Math.cos(a)>.3?'left':Math.cos(a)<-.3?'right':'center'}});title=[px,py-rr-60]}
+    if(L==='tray'){const per=Math.min(n,Math.floor((W-200)/96)),rows=Math.ceil(n/per);pos=ms.map((o,i)=>{const r=Math.floor(i/per),c=i%per,m=Math.min(per,n-r*per);return{o,x:W/2+(c-(m-1)/2)*96,y:py+150+r*128,la:[0,44],al:'center',sub:'Mohs '+o.m.h}});title=[px,py-60];
+      g.strokeStyle=`rgba(${INK},${.4*e})`;g.beginPath();g.moveTo(px,py);g.lineTo(px,py+90);g.lineTo(W/2,py+90);g.stroke();
+      for(let r=0;r<rows;r++){const m=Math.min(per,n-r*per),y=py+150+r*128+28;g.beginPath();g.moveTo(W/2-m*48-10,y);g.lineTo(W/2+m*48+10,y);g.stroke()}}
+    if(L==='druse'){pos=ms.map((o,i)=>{const a=-Math.PI/2+i*2*Math.PI/n,rr=(80+o.m.h/10*190)*e;return{o,x:px+Math.cos(a)*rr,y:py+Math.sin(a)*rr,la:[Math.cos(a)*34,Math.sin(a)*34+4],al:Math.cos(a)>.3?'left':Math.cos(a)<-.3?'right':'center'}});title=[px,py-310];
+      [1,5,10].forEach(h=>{g.strokeStyle=`rgba(${INK},${.12*e})`;g.setLineDash([2,4]);g.beginPath();g.arc(px,py,(80+h/10*190)*e,0,7);g.stroke();g.setLineDash([]);lab(px+4,py-(80+h/10*190)*e-4,'Mohs '+h,MUTE,.6*e,'italic 10px')})}
+    if(L==='fan'){const R0=Math.max(220,n*46/Math.PI)*e,a0=Math.PI*1.08,a1=Math.PI*1.92;pos=ms.map((o,i)=>{const a=n>1?a0+i/(n-1)*(a1-a0):Math.PI*1.5;return{o,x:px+Math.cos(a)*R0,y:py+Math.sin(a)*R0,la:[Math.cos(a)*38,Math.sin(a)*38+4],al:Math.cos(a)>.3?'left':Math.cos(a)<-.3?'right':'center',sub:'Mohs '+o.m.h}});title=[px,py+60]}
+    g.fillStyle=`rgba(235,233,227,${.88*e})`;g.fillRect(0,0,W,H);   // the earth steps back behind the case
+    g.fillStyle=`rgba(${INK},${e})`;g.beginPath();g.arc(px,py,3,0,7);g.fill();
+    lab(title[0],title[1],PF.n,INK,e,'18px','center');lab(title[0],title[1]+18,`${n} minerals found here · click outside to go back`,MUTE,e,'italic 12px','center');
+    if(L==='tray'){g.strokeStyle=`rgba(${INK},${.4*e})`;g.beginPath();g.moveTo(px,py);g.lineTo(px,py+90);g.lineTo(W/2,py+90);g.stroke();const per=Math.min(n,Math.floor((W-200)/96));for(let r=0;r<Math.ceil(n/per);r++){const m=Math.min(per,n-r*per),y=py+150+r*128+28;g.beginPath();g.moveTo(W/2-m*48-10,y);g.lineTo(W/2+m*48+10,y);g.stroke()}}
+    if(L==='druse')[1,5,10].forEach(h=>{g.strokeStyle=`rgba(${INK},${.15*e})`;g.setLineDash([2,4]);g.beginPath();g.arc(px,py,(80+h/10*190)*e,0,7);g.stroke();g.setLineDash([]);lab(px+4,py-(80+h/10*190)*e-4,'Mohs '+h,MUTE,.6*e,'italic 10px')});
+    if(L==='fan'){const R0=Math.max(220,n*46/Math.PI)*e;g.strokeStyle=`rgba(${INK},${.25*e})`;g.beginPath();g.arc(px,py,R0,Math.PI*1.08,Math.PI*1.92);g.stroke();lab(px+Math.cos(Math.PI*1.08)*R0-8,py+Math.sin(Math.PI*1.08)*R0+18,'soft',MUTE,.6*e,'italic 11px','center');lab(px+Math.cos(Math.PI*1.92)*R0+8,py+Math.sin(Math.PI*1.92)*R0+18,'hard',MUTE,.6*e,'italic 11px','center')}
+    pos.forEach(({o,x,y,la,al,sub})=>{const isH=hov&&hov.m===o.m;
+      if(L!=='tray'){g.strokeStyle=`rgba(${INK},${(isH?.5:.12)*e})`;g.beginPath();g.moveTo(px,py);g.lineTo(x,y);g.stroke()}
+      if(o.m.x){const h=o.m.habits[0],sz=(isH?30:21)*e,P=h.V.map(v=>{const q=rot(v,-.38,t/3200+o.seed);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=e*(hov&&!isH?.45:1);ink(g,h,P,1,1);g.globalAlpha=1}
+      else{g.strokeStyle=`rgba(${INK},${.6*e})`;g.beginPath();g.arc(x,y,6,0,7);g.stroke()}
+      lab(x+la[0],y+la[1],o.m.n,isH?INK:MUTE,e*(hov&&!isH?.5:1),(isH?'':'italic ')+'11px',al);if(sub)lab(x+la[0],y+la[1]+14,sub,MUTE,.6*e,'italic 10px',al);
+      hits.push([x,y,18,{m:o.m,col:o.m.colors[0].hex,pl:PF}])})}
+
+  if(!PF)lab(W/2,H-40,'drag to turn the earth · click a place to look closer',MUTE,.6,'italic 12px','center');HITS=hits}
+let hovPlace=null;
+
+/* ---------- C · Hardness: you hold a tool at a fixed needle; the Mohs scale slides under it. Everything left of the needle is softer and gets scratched.
+   Soft minerals are drawn round and loose, hard ones crisp and sharp ---------- */
+const MOHS=['talc','gypsum','calcite','fluorite','apatite','orthoclase','quartz','topaz','corundum','diamond'];
+const TOOLS=[[2.5,'fingernail'],[3.5,'copper coin'],[5.5,'steel knife · glass'],[6.5,'steel file']];
+let HC=null,toolH=5.5,toolT=5.5;
+function layHard(){const y0=H-170,cols={};D.forEach(m=>{const k=Math.round(m.h*2)/2;(cols[k]=cols[k]||[]).push(m)});
+  const mxN=Math.max(...Object.values(cols).map(c=>c.length)),step=Math.min(19,(y0-150)/mxN);
+  HC={y0,step,U:Math.min(W*.15,190),items:[]};
+  Object.entries(cols).forEach(([k,ms])=>ms.sort((a,b)=>a.n.localeCompare(b.n)).forEach((m,i)=>HC.items.push({m,h:+k,i,y:-40-i*30,v:0,sc:0,seed:Math.random()*6})))}
+function placeTool(){}
+const X=h=>W/2+(h-toolH)*HC.U;
+// the mark itself says how hard: talc is a soft dashed circle, the circle tightens into a polygon with fewer, sharper corners as it gets harder
+function hmark(o,x,y,sc,al,open,t){o.k=(o.k||0)+((open?1:0)-(o.k||0))*.14;const k=o.k,m=o.m,h=m.h;
+  if(k<.97){const a=al*(1-k),r=5*sc;g.strokeStyle=`rgba(${INK},${a*(.3+.05*h)})`;g.lineWidth=.6;
+    if(h<3.5){g.setLineDash(h<2.5?[1.2,1.8]:[2.5,1.4]);g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.setLineDash([])}
+    else{const n=h<5?8:h<6.5?6:h<8?5:h<9.5?4:3;g.beginPath();for(let i=0;i<=n;i++){const an=-Math.PI/2+i*2*Math.PI/n;g.lineTo(x+Math.cos(an)*r,y+Math.sin(an)*r)}g.closePath();g.stroke()}}
+  if(k>.03&&m.x){const hb=m.habits[0],sz=46*(.3+.7*k),ry=t/3200+(o.seed||0);const P=hb.V.map(v=>{const q=rot(v,-.38,ry);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=k*al;ink(g,hb,P,1,1.2);g.globalAlpha=1}}
+let focusO=null,fpx=-99,fpy=-99;
+// pointing at a mineral brings it to the needle: the scale slides until its column stands in the middle, it opens into its crystal,
+// its column parts around it, and everything else shrinks with distance from the middle
+function hardMove(){if(!HC||hDrag!=null)return;const sliding=Math.abs(toolT-toolH)>.04;if(sliding||Math.hypot(mx-fpx,my-fpy)<6)return;
+  let best=null,bd=14;HITS.forEach(h=>{const d=Math.hypot(h[0]-mx,h[1]-my);if(d<bd){bd=d;best=h[3]}});
+  if(best&&best!==focusO){focusO=best;fpx=mx;fpy=my;toolT=best.m.h;hov=best;showCard(best.m)}
+  else if(!best&&my<HC.y0-4&&Math.hypot(mx-W/2,my-(focusO?focusO._fy:0))>70){focusO=null;hov=null;fpx=mx;fpy=my;if(!pin)hideCard()}}
+// like the dial under a phone's photo filters: whatever stands at the needle is drawn large, the rest shrink and fade the further they are
+const FISH=dx=>{const R=W*.55,M=1.1,a=Math.min(1,Math.abs(dx)/R);return Math.sign(dx)*R*((M+1)*a/(M*a+1))};
+const SCL=dx=>.72+.75*Math.exp(-Math.pow(dx/(W*.1),2));
+function drawHard(t){const {y0,step}=HC;toolH+=(toolT-toolH)*.12;const cx0=W/2,PX=h=>cx0+FISH(X(h)-cx0);
+  g.strokeStyle=`rgba(${INK},.45)`;g.lineWidth=.8;g.beginPath();g.moveTo(Math.max(0,PX(.6)),y0);g.lineTo(Math.min(W,PX(10.4)),y0);g.stroke();
+  for(let h=1;h<=10.001;h+=.25){const x=PX(h),dx=x-cx0,near=Math.exp(-Math.pow(dx/70,2)),big=Math.abs(h-Math.round(h))<.01;
+    g.strokeStyle=`rgba(${INK},${(big?.5:.2)+.45*near})`;g.lineWidth=.8+.6*near;g.beginPath();g.moveTo(x,y0);g.lineTo(x,y0+(big?6:3)+16*near);g.stroke();g.lineWidth=1;
+    if(big){const f=Math.max(.5,1-Math.abs(dx)/(W*.6));lab(x,y0+30+14*near,String(Math.round(h)),INK,f,`${12+10*near}px`,'center');lab(x,y0+46+18*near,MOHS[Math.round(h)-1],MUTE,.8*f,`italic ${11+3*near}px`,'center')}}
+  TOOLS.forEach(([h,n])=>{const x=PX(h),f=Math.max(.2,1-Math.abs(x-cx0)/(W*.4));lab(x,y0+92,n,MUTE,.8*f,'italic 11px','center')});
+  lab(Math.max(30,PX(1)-20),y0-8,'soft',MUTE,.7,'italic 12px','right');lab(Math.min(W-30,PX(10)+20),y0-8,'hard',MUTE,.7,'italic 12px','left');
+  const F=focusO;HC.fk=(HC.fk||0)+((F?1:0)-(HC.fk||0))*.12;const fk=HC.fk,hits=[],cols={};
+  HC.items.forEach(o=>{(cols[o.h]=cols[o.h]||[]).push(o)});
+  Object.entries(cols).forEach(([h,list])=>{const x=PX(+h),dx=x-cx0;if(x<-40||x>W+40)return;let sc=SCL(dx);sc=Math.min(sc,(y0-150)/(list.length*step));
+    const al0=Math.max(.5,Math.exp(-Math.pow(dx/(W*.38),2)));
+    list.forEach(o=>{const ty=y0-16-o.i*step*sc;o.v+=(ty-o.y)*.06;o.v*=.78;o.y+=o.v;let y=o.y;
+      const isF=o===F,same=F&&o.h===F.h;if(same&&!isF){const gap=60*fk;y=o.i>F.i?o.y-gap:Math.min(y0-7,o.y+gap*.3)}
+      const al=F?(isF?1:same?.45:al0*.7):al0;hmark(o,x,y,isF?1:sc,al,isF,t);hits.push([x,y,8*Math.max(.6,sc),o]);if(isF){o._fx=x;o._fy=y}})});
+  if(F&&F._fx){lab(F._fx+56,F._fy-8,F.m.n,INK,fk,'17px');lab(F._fx+56,F._fy+12,`Mohs ${F.m.h}`,MUTE,fk,'italic 13px')}
+  g.strokeStyle=`rgba(${INK},.7)`;g.lineWidth=.8;g.beginPath();g.moveTo(cx0,96);g.lineTo(cx0,y0+28);g.stroke();g.lineWidth=1;
+  const nt=TOOLS.concat([[7,'quartz'],[8,'topaz'],[9,'corundum'],[10,'diamond'],[1,'talc'],[2,'gypsum']]).reduce((a,b)=>Math.abs(b[0]-toolH)<Math.abs(a[0]-toolH)?b:a);
+  lab(cx0,82,`${toolH.toFixed(1)}${Math.abs(nt[0]-toolH)<.3?' · '+nt[1]:''}`,INK,1,'15px','center');
+  lab(W/2,y0+118,`softer to the left of the needle, harder to the right  ·  point at a mineral to bring it here`,MUTE,.7,'italic 12px','center');
+  HITS=hits}
+let hDrag=null;
+cv.addEventListener('pointerdown',e=>{if(view==='hard'){focusO=null;hov=null;hDrag=e.clientX;cv.setPointerCapture(e.pointerId)}});
+addEventListener('pointermove',e=>{if(hDrag!=null){toolT=Math.max(1,Math.min(10,toolT-(e.clientX-hDrag)/HC.U));hDrag=e.clientX}});
+addEventListener('pointerup',()=>{if(hDrag!=null){hDrag=null;const all=TOOLS.map(t=>t[0]).concat([1,2,3,4,5,6,7,8,9,10]);const n=all.reduce((a,b)=>Math.abs(b-toolT)<Math.abs(a-toolT)?b:a);if(Math.abs(n-toolT)<.2)toolT=n}});
+addEventListener('wheel',e=>{if(view!=='hard')return;e.preventDefault();toolT=Math.max(1,Math.min(10,toolT+(e.deltaY+e.deltaX)*.004))},{passive:false});
+const toolEl=document.getElementById('tool');
+/* ---------- shared ---------- */
+let HITS=[];
+function lab(x,y,s,c,a,f,al){g.globalAlpha=a;g.fillStyle=`rgb(${c})`;g.font=`${f||'12px'} ${FONT}`;g.textAlign=al||'left';g.fillText(s,x,y);g.textAlign='left';g.globalAlpha=1}
+function lay(){if(!D.length)return;layColour();layPlace();layHard()}
+function setView(v){view=v;T0=performance.now();hov=null;pin=null;hideCard();document.querySelectorAll('#top button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  toolEl.style.display='none';if(v==='hard')layHard();if(v==='colour')layColour();
+  document.getElementById('sub').textContent={colour:`${D.length} minerals, by the colour they show`,place:`${D.length} minerals, where they are found`,hard:`${D.length} minerals, from soft to hard`}[v];
+  try{history.replaceState(null,'','#'+v)}catch(e){}}
+document.querySelectorAll('#top button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+const tip=document.getElementById('tip');
+addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY;
+  if(view==='hard'){hardMove();tip.style.opacity=0;cv.style.cursor=hDrag!=null?'grabbing':'default';return}
+  if(G.drag){G.vl=(e.clientX-G.x)*.25;G.va=(e.clientY-G.y)*.2;G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.x=e.clientX;G.y=e.clientY;return}
+  let best=null,bd=1e9;HITS.forEach(h=>{const d=Math.hypot(h[0]-mx,h[1]-my);if(d<h[2]+3&&d<bd){bd=d;best=h[3]}});
+  hovPlace=null;if(view==='place'&&PL&&!PF){let b2=null,d2=26;PL.forEach(p=>{if(p.sz>.02){const d=Math.hypot(p.sx-mx,p.sy-my);if(d<d2+(p.o||0)*30){d2=d;b2=p}}});hovPlace=b2}
+  hov=best;
+  if(best){showCard(best.m);tip.style.opacity=view==='place'&&PF?0:1;tip.style.left=(mx+16)+'px';tip.style.top=(my-26)+'px';tip.innerHTML=`<b>${best.m.n}</b>  <span>${best.cn?best.cn.toLowerCase()+(best.v&&best.v!==best.m.n?' · '+best.v.toLowerCase():''):'Mohs '+best.m.h}</span>`}
+  else{tip.style.opacity=0;if(!pin)hideCard()}
+  cv.style.cursor=best?'pointer':view==='place'?'grab':'default'});
+cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if(pin)showCard(hov.m);return}pin=null;hideCard();if(view==='place'&&(hovPlace||PF)){PF=hovPlace&&hovPlace!==PF?hovPlace:null;return}if(view==='place'){G.drag=true;G.x=e.clientX;G.y=e.clientY;cv.setPointerCapture(e.pointerId)}});
+addEventListener('pointerup',()=>{G.drag=false});
+card.addEventListener('pointerleave',()=>{if(!pin)hideCard()});
+function loop(t){g.clearRect(0,0,W,H);if(D.length){if(view==='colour')drawColour(t);else if(view==='place')drawPlace(t);else drawHard(t);drawCard(t)}requestAnimationFrame(loop)}
+{const el=document.getElementById('lay');el.innerHTML=[['tray','tray'],['fan','fan'],['druse','druse'],['ring','ring']].map(([k,n])=>`<a href="?lay=${k}#place" style="color:${k===LAY?'#1c1b18':'#767168'};text-decoration:none">${n}</a>`).join('<span>·</span>')}
+Promise.all([fetch('minerals.json').then(r=>r.json()),fetch('land.json').then(r=>r.json())]).then(([d,l])=>{D=d;LAND=l;addEventListener('resize',rs);rs();setView(['colour','place','hard'].includes(location.hash.slice(1))?location.hash.slice(1):'colour');requestAnimationFrame(loop)});
+</script></body></html>
