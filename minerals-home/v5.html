@@ -29,7 +29,7 @@ button{all:unset;cursor:pointer}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="brand"><b>Minerals</b><span id="sub"></span></div>
-<nav id="lay" style="position:fixed;right:26px;top:22px;z-index:3;display:flex;gap:10px;font-style:italic;color:#767168"></nav><nav id="top"><button data-v="colour">Colour</button><span>·</span><button data-v="place">Place</button><span>·</span><button data-v="hard">Hardness</button></nav>
+<nav id="lay" style="position:fixed;right:26px;top:22px;z-index:6;display:flex;gap:10px;font-style:italic;color:#767168"></nav><nav id="top"><button data-v="colour">Colour</button><span>·</span><button data-v="place">Place</button><span>·</span><button data-v="hard">Hardness</button></nav>
 <div id="tip"></div><div id="tool"><div class="k"></div><b></b><span></span></div>
 <div id="card"><canvas id="cc" width="540" height="340"></canvas><h2></h2><div class="hb"></div><div class="rows"></div><div class="nt"></div></div>
 <script>
@@ -121,7 +121,7 @@ let G={lon:-20,lat:-28,vl:0,va:0,drag:false},PL=null;
 const ll2v=(lat,lon)=>{const a=lat*Math.PI/180,o=lon*Math.PI/180;return[Math.cos(a)*Math.sin(o),-Math.sin(a),Math.cos(a)*Math.cos(o)]};
 function layPlace(){const by={};D.forEach(m=>m.loc.forEach(l=>{(by[l.n]=by[l.n]||{n:l.n,lat:l.lat,lon:l.lon,ms:[]}).ms.push({m,seed:Math.random()*6})}));PL=Object.values(by)}
 function gview(v){const a=G.lon*Math.PI/180,b=G.lat*Math.PI/180;let x=v[0]*Math.cos(a)-v[2]*Math.sin(a),z=v[0]*Math.sin(a)+v[2]*Math.cos(a),y=v[1];return[x,y*Math.cos(b)-z*Math.sin(b),y*Math.sin(b)+z*Math.cos(b)]}
-let PF=null;G.z=1;const LAY=(new URLSearchParams(location.search).get('lay'))||'tray';
+let PF=null;G.z=1;let LAY=(new URLSearchParams(location.search).get('lay'))||'tray';
 function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx0=W/2,cy0=H/2+14,k=ease((t-T0)/1400);
   if(PF){const dl=((PF.lon-G.lon+540)%360)-180;G.lon+=dl*.09;G.lat+=(-PF.lat-G.lat)*.09;G.vl=G.va=0}
   else if(!G.drag){G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.vl=G.vl*.95+(hov||hovPlace?0:.05)*.05;G.va*=.92}
@@ -251,6 +251,7 @@ cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if
 addEventListener('pointerup',()=>{G.drag=false});
 card.addEventListener('pointerleave',()=>{if(!pin)hideCard()});
 function loop(t){g.clearRect(0,0,W,H);if(D.length){if(view==='colour')drawColour(t);else if(view==='place')drawPlace(t);else drawHard(t);drawCard(t)}requestAnimationFrame(loop)}
-{const el=document.getElementById('lay');el.innerHTML=[['tray','tray'],['fan','fan'],['druse','druse'],['ring','ring']].map(([k,n])=>`<a href="?lay=${k}#place" style="color:${k===LAY?'#1c1b18':'#767168'};text-decoration:none">${n}</a>`).join('<span>·</span>')}
+{const el=document.getElementById('lay');const draw=()=>{el.innerHTML=['tray','fan','druse','ring'].map(k=>`<button data-k="${k}" style="all:unset;cursor:pointer;color:${k===LAY?'#1c1b18':'#767168'};font-style:${k===LAY?'normal':'italic'}">${k}</button>`).join('<span>·</span>');
+  el.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();LAY=b.dataset.k;try{history.replaceState(null,'','?lay='+LAY+location.hash)}catch(_){}draw()})};draw()}
 Promise.all([fetch('minerals.json').then(r=>r.json()),fetch('land.json').then(r=>r.json())]).then(([d,l])=>{D=d;LAND=l;addEventListener('resize',rs);rs();setView(['colour','place','hard'].includes(location.hash.slice(1))?location.hash.slice(1):'colour');requestAnimationFrame(loop)});
 </script></body></html>
