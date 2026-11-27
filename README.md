@@ -18,4 +18,4 @@ The direction for the final: one design system built from a single shape, a bubb
 
 ## Final · Minerals (work in progress)
 
-The Axis Nav system with 92 minerals: L0 where each was first found, L1–L2 the cube by kind and the year it was named, L3 one specimen with its own a·b·c crystal axes and hardness, L4 the cabinet of what you collected. [Open](https://dakotashao.github.io/adv_interface_wk10/minerals-app/) · [Level breakdown](https://dakotashao.github.io/adv_interface_wk10/minerals-structure/)
+The Axis Nav system with 92 minerals: L0 where each was first found, L1–L2 the cube by kind and the year it was named, L3 one specimen with its own a·b·c crystal axes and hardness, L4 the cabinet of what you collected. [Open](https://dakotashao.github.io/adv_interface_wk10/minerals-app/) · [Level breakdown](https://dakotashao.github.io/adv_interface_wk10/minerals-structure/) · [Three ways in: colour, place, hardness](https://dakotashao.github.io/adv_interface_wk10/minerals-home/)
