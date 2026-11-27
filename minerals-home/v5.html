@@ -161,8 +161,8 @@ function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx
       [1,5,10].forEach(h=>{g.strokeStyle=`rgba(${INK},${.12*e})`;g.setLineDash([2,4]);g.beginPath();g.arc(px,py,(80+h/10*190)*e,0,7);g.stroke();g.setLineDash([]);lab(px+4,py-(80+h/10*190)*e-4,'Mohs '+h,MUTE,.6*e,'italic 10px')})}
     if(L==='fan'){const R0=Math.max(220,n*46/Math.PI)*e,a0=Math.PI*1.08,a1=Math.PI*1.92;pos=ms.map((o,i)=>{const a=n>1?a0+i/(n-1)*(a1-a0):Math.PI*1.5;return{o,x:px+Math.cos(a)*R0,y:py+Math.sin(a)*R0,la:[Math.cos(a)*38,Math.sin(a)*38+4],al:Math.cos(a)>.3?'left':Math.cos(a)<-.3?'right':'center',sub:'Mohs '+o.m.h}});title=[px,py+60]}
     g.fillStyle=`rgba(235,233,227,${.88*e})`;g.fillRect(0,0,W,H);   // the earth steps back behind the case
-    g.fillStyle=`rgba(${INK},${e})`;g.beginPath();g.arc(px,py,3,0,7);g.fill();
-    lab(title[0],title[1],PF.n,INK,e,'18px','center');lab(title[0],title[1]+18,`${n} minerals found here · click outside to go back`,MUTE,e,'italic 12px','center');
+    if(L!=='geode'){g.fillStyle=`rgba(${INK},${e})`;g.beginPath();g.arc(px,py,3,0,7);g.fill()}
+    if(L!=='geode'){lab(title[0],title[1],PF.n,INK,e,'18px','center');lab(title[0],title[1]+18,`${n} minerals found here · click outside to go back`,MUTE,e,'italic 12px','center')}
     if(L==='tray'){g.strokeStyle=`rgba(${INK},${.4*e})`;g.beginPath();g.moveTo(px,py);g.lineTo(px,py+90);g.lineTo(W/2,py+90);g.stroke();const per=Math.min(n,Math.floor((W-200)/96));for(let r=0;r<Math.ceil(n/per);r++){const m=Math.min(per,n-r*per),y=py+150+r*128+28;g.beginPath();g.moveTo(W/2-m*48-10,y);g.lineTo(W/2+m*48+10,y);g.stroke()}}
     if(L==='druse')[1,5,10].forEach(h=>{g.strokeStyle=`rgba(${INK},${.15*e})`;g.setLineDash([2,4]);g.beginPath();g.arc(px,py,(80+h/10*190)*e,0,7);g.stroke();g.setLineDash([]);lab(px+4,py-(80+h/10*190)*e-4,'Mohs '+h,MUTE,.6*e,'italic 10px')});
     if(L==='fan'){const R0=Math.max(220,n*46/Math.PI)*e;g.strokeStyle=`rgba(${INK},${.25*e})`;g.beginPath();g.arc(px,py,R0,Math.PI*1.08,Math.PI*1.92);g.stroke();lab(px+Math.cos(Math.PI*1.08)*R0-8,py+Math.sin(Math.PI*1.08)*R0+18,'soft',MUTE,.6*e,'italic 11px','center');lab(px+Math.cos(Math.PI*1.92)*R0+8,py+Math.sin(Math.PI*1.92)*R0+18,'hard',MUTE,.6*e,'italic 11px','center')}
@@ -177,6 +177,19 @@ function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx
         if(o.m.x){const h=o.m.habits[0],sz=21*(1+.35*o.lift),P=h.V.map(v=>{const q=rot(v,-.38,t/3200+o.seed);return[cx+q[0]*sz,y+q[1]*sz,q[2]]});ink(g,h,P,1,1)}else{g.strokeStyle=`rgba(${INK},.6)`;g.beginPath();g.arc(cx,y,6,0,7);g.stroke()}
         g.globalAlpha=1;lab(cx,cy+88,o.m.n,isH?INK:MUTE,k*e,(isH?'':'italic ')+'11px','center');lab(cx,cy+102,'Mohs '+o.m.h,MUTE,.6*k*e,'italic 10px','center');
         hits.push([cx,y,22,{m:o.m,col:o.m.colors[0].hex,pl:PF}])});pos=[]}
+    // geode: a geode cut in half. A banded rock shell; the minerals grow from its inner wall toward the hollow middle, soft to hard going round
+    if(L==='geode'){const Rw=Math.min(H*.3,Math.max(150,n*30/(2*Math.PI)))*e,wob=(an,k)=>1+.035*Math.sin(an*3+k)+.02*Math.sin(an*7+k*2.3)+.012*Math.sin(an*13+k);
+      for(let b=0;b<5;b++){const rb=Rw+6+b*7;g.strokeStyle=`rgba(${INK},${(b===0?.55:b===4?.5:.16)*e})`;g.lineWidth=b===0||b===4?.9:.6;g.beginPath();for(let d=0;d<=360;d+=3){const an=d*Math.PI/180,r=rb*wob(an,b*.6);d?g.lineTo(px+Math.cos(an)*r,py+Math.sin(an)*r):g.moveTo(px+Math.cos(an)*r,py+Math.sin(an)*r)}g.closePath();g.stroke()}g.lineWidth=1;   // agate-like bands in the shell
+      lab(px,py-4,PF.n,INK,e,'18px','center');lab(px,py+16,`${n} minerals · soft to hard, clockwise`,MUTE,.8*e,'italic 12px','center');lab(px,py+32,'click outside to go back',MUTE,.55*e,'italic 11px','center');
+      const a0=-Math.PI/2;
+      ms.forEach((o,i)=>{const a=a0+(i+.5)*2*Math.PI/n,k=ease((lt-200-i*60)/650);if(k<=0)return;const isH=hov&&hov.m===o.m,rw=(Rw+6)*wob(a,0),sz=(isH?27:19)*(.3+.7*k),ca=Math.cos(a),sa=Math.sin(a);
+        const cxx=px+ca*(rw-sz*1.05*k),cyy=py+sa*(rw-sz*1.05*k),th=a-Math.PI/2,ct=Math.cos(th),st=Math.sin(th);   // standing on the wall, its long axis pointing into the hollow
+        g.globalAlpha=e*k*(hov&&!isH?.4:1);
+        if(o.m.x){const h=o.m.habits[0],P=h.V.map(v=>{const q=rot(v,-.1,t/4200+o.seed);const X=q[0]*sz,Y=q[1]*sz;return[cxx+X*ct-Y*st,cyy+X*st+Y*ct,q[2]]});ink(g,h,P,1,1)}
+        else{g.strokeStyle=`rgba(${INK},.6)`;g.beginPath();g.arc(cxx,cyy,6,0,7);g.stroke()}g.globalAlpha=1;
+        const lr=Rw+52;lab(px+ca*lr,py+sa*lr+4,o.m.n,isH?INK:MUTE,k*e*(hov&&!isH?.5:1),(isH?'':'italic ')+'11px',ca>.3?'left':ca<-.3?'right':'center');
+        if(isH)lab(px+ca*lr,py+sa*lr+18,'Mohs '+o.m.h,MUTE,.8,'italic 10px',ca>.3?'left':ca<-.3?'right':'center');
+        hits.push([cxx,cyy,18,{m:o.m,col:o.m.colors[0].hex,pl:PF}])});pos=[];title=null}
     // druse+: the minerals grow out of the place like crystals from a rock, each standing on its own long axis; the further out, the harder
     if(L==='druse+'){const rr=h=>(64+h/10*Math.min(230,H*.3))*e,hm=hov&&hov.m;
       for(let h=1;h<=10;h++){const on=hm&&Math.abs(hm.h-h)<.26;g.strokeStyle=`rgba(${INK},${on?.45:(h%5?.06:.14)*e})`;g.beginPath();g.arc(px,py,rr(h),0,7);g.stroke();if(h===1||h===5||h===10||on)lab(px,py-rr(h)-4,'Mohs '+(on?hm.h:h),on?INK:MUTE,on?.9:.55*e,'italic 10px','center')}
@@ -274,7 +287,7 @@ cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if
 addEventListener('pointerup',()=>{G.drag=false});
 card.addEventListener('pointerleave',()=>{if(!pin)hideCard()});
 function loop(t){g.clearRect(0,0,W,H);if(D.length){if(view==='colour')drawColour(t);else if(view==='place')drawPlace(t);else drawHard(t);drawCard(t)}requestAnimationFrame(loop)}
-{const el=document.getElementById('lay');const draw=()=>{el.innerHTML=['tray','tray+','druse','druse+','fan','ring'].map(k=>`<button data-k="${k}" style="all:unset;cursor:pointer;color:${k===LAY?'#1c1b18':'#767168'};font-style:${k===LAY?'normal':'italic'}">${k}</button>`).join('<span>·</span>');
+{const el=document.getElementById('lay');const draw=()=>{el.innerHTML=['tray','tray+','druse','druse+','geode','fan','ring'].map(k=>`<button data-k="${k}" style="all:unset;cursor:pointer;color:${k===LAY?'#1c1b18':'#767168'};font-style:${k===LAY?'normal':'italic'}">${k}</button>`).join('<span>·</span>');
   el.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();LAY=b.dataset.k;try{history.replaceState(null,'','?lay='+encodeURIComponent(LAY)+location.hash)}catch(_){}draw()})};draw()}
 Promise.all([fetch('minerals.json').then(r=>r.json()),fetch('land.json').then(r=>r.json())]).then(([d,l])=>{D=d;LAND=l;addEventListener('resize',rs);rs();setView(['colour','place','hard'].includes(location.hash.slice(1))?location.hash.slice(1):'colour');requestAnimationFrame(loop)});
 </script></body></html>
