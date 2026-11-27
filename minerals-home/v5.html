@@ -168,17 +168,14 @@ function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx
     if(L==='fan'){const R0=Math.max(220,n*46/Math.PI)*e;g.strokeStyle=`rgba(${INK},${.25*e})`;g.beginPath();g.arc(px,py,R0,Math.PI*1.08,Math.PI*1.92);g.stroke();lab(px+Math.cos(Math.PI*1.08)*R0-8,py+Math.sin(Math.PI*1.08)*R0+18,'soft',MUTE,.6*e,'italic 11px','center');lab(px+Math.cos(Math.PI*1.92)*R0+8,py+Math.sin(Math.PI*1.92)*R0+18,'hard',MUTE,.6*e,'italic 11px','center')}
     const lt=t-(PF.t0||0);
     // tray+: a specimen box; each mineral has its own compartment and paper label, laid in one after another, soft to hard
-    if(L==='tray+'){const cw=104,ch=124,rows=Math.ceil(n/Math.min(n,Math.floor((W-160)/cw))),per=Math.ceil(n/rows),bx=W/2-per*cw/2,by=Math.min(py+96,H-rows*ch-40);
-      g.strokeStyle=`rgba(${INK},${.45*e})`;g.lineWidth=.8;g.beginPath();g.moveTo(px,py);g.lineTo(px,by-26);g.lineTo(W/2,by-26);g.lineTo(W/2,by);g.stroke();
-      g.strokeRect(bx,by,per*cw,rows*ch);g.strokeStyle=`rgba(${INK},${.13*e})`;for(let c=1;c<per;c++){g.beginPath();g.moveTo(bx+c*cw,by);g.lineTo(bx+c*cw,by+rows*ch);g.stroke()}for(let r=1;r<rows;r++){g.beginPath();g.moveTo(bx,by+r*ch);g.lineTo(bx+per*cw,by+r*ch);g.stroke()}g.lineWidth=1;
-      lab(bx,by+rows*ch+18,'soft',MUTE,.6*e,'italic 11px');lab(bx+per*cw,by+rows*ch+18,'hard',MUTE,.6*e,'italic 11px','right');
-      ms.forEach((o,i)=>{const r=Math.floor(i/per),c=i%per,cx=bx+(c+.5)*cw,cy=by+r*ch,k=ease((lt-160-i*70)/520);if(k<=0)return;const isH=hov&&hov.m===o.m;
-        o.lift=(o.lift||0)+((isH?1:0)-(o.lift||0))*.2;const y=cy+52-(1-k)*36-o.lift*12;
-        if(isH){g.strokeStyle=`rgba(${INK},.6)`;g.strokeRect(bx+c*cw+3,cy+3,cw-6,ch-6)}
+    if(L==='tray+'){const cw=100,ch=128,rows=Math.ceil(n/Math.min(n,Math.floor((W-160)/cw))),per=Math.ceil(n/rows),by=Math.min(py+110,H-rows*ch-30);
+      g.strokeStyle=`rgba(${INK},${.4*e})`;g.lineWidth=.8;g.beginPath();g.moveTo(px,py);g.lineTo(px,by-30);g.lineTo(W/2,by-30);g.stroke();
+      for(let r=0;r<rows;r++){const m=Math.min(per,n-r*per),y=by+r*ch+70;g.beginPath();g.moveTo(W/2-m*cw/2,y);g.lineTo(W/2+m*cw/2,y);g.stroke()}g.lineWidth=1;   // one shelf line per row
+      ms.forEach((o,i)=>{const r=Math.floor(i/per),c=i%per,m=Math.min(per,n-r*per),cx=W/2+(c-(m-1)/2)*cw,cy=by+r*ch,k=ease((lt-160-i*70)/520);if(k<=0)return;const isH=hov&&hov.m===o.m;
+        o.lift=(o.lift||0)+((isH?1:0)-(o.lift||0))*.2;const y=cy+36-(1-k)*36-o.lift*12;
         g.globalAlpha=k*e*(hov&&!isH?.45:1);
         if(o.m.x){const h=o.m.habits[0],sz=21*(1+.35*o.lift),P=h.V.map(v=>{const q=rot(v,-.38,t/3200+o.seed);return[cx+q[0]*sz,y+q[1]*sz,q[2]]});ink(g,h,P,1,1)}else{g.strokeStyle=`rgba(${INK},.6)`;g.beginPath();g.arc(cx,y,6,0,7);g.stroke()}
-        g.globalAlpha=1;g.strokeStyle=`rgba(${INK},${.18*k*e})`;g.beginPath();g.moveTo(cx-30,cy+ch-34);g.lineTo(cx+30,cy+ch-34);g.stroke();   // the paper label's rule
-        lab(cx,cy+ch-18,o.m.n,isH?INK:MUTE,k*e,(isH?'':'italic ')+'11px','center');lab(cx,cy+ch-5,'Mohs '+o.m.h,MUTE,.6*k*e,'italic 10px','center');
+        g.globalAlpha=1;lab(cx,cy+88,o.m.n,isH?INK:MUTE,k*e,(isH?'':'italic ')+'11px','center');lab(cx,cy+102,'Mohs '+o.m.h,MUTE,.6*k*e,'italic 10px','center');
         hits.push([cx,y,22,{m:o.m,col:o.m.colors[0].hex,pl:PF}])});pos=[]}
     // druse+: the minerals grow out of the place like crystals from a rock, each standing on its own long axis; the further out, the harder
     if(L==='druse+'){const rr=h=>(64+h/10*Math.min(230,H*.3))*e,hm=hov&&hov.m;
