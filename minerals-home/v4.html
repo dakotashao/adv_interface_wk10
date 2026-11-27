@@ -162,7 +162,7 @@ function hmark(o,x,y,sc,al,open,t){o.k=(o.k||0)+((open?1:0)-(o.k||0))*.14;const 
   if(k<.97){const a=al*(1-k),r=5*sc;g.strokeStyle=`rgba(${INK},${a*(.3+.05*h)})`;g.lineWidth=.6;
     if(h<3.5){g.setLineDash(h<2.5?[1.2,1.8]:[2.5,1.4]);g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.setLineDash([])}
     else{const n=h<5?8:h<6.5?6:h<8?5:h<9.5?4:3;g.beginPath();for(let i=0;i<=n;i++){const an=-Math.PI/2+i*2*Math.PI/n;g.lineTo(x+Math.cos(an)*r,y+Math.sin(an)*r)}g.closePath();g.stroke()}}
-  if(k>.03&&m.x){const hb=m.habits[0],sz=36*(.3+.7*k),ry=t/3200+(o.seed||0);const P=hb.V.map(v=>{const q=rot(v,-.38,ry);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=k*al;ink(g,hb,P,1,1.2);g.globalAlpha=1}}
+  if(k>.03&&m.x){const hb=m.habits[0],sz=58*(.3+.7*k),ry=t/3200+(o.seed||0);const P=hb.V.map(v=>{const q=rot(v,-.38,ry);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=k*al;ink(g,hb,P,1,1.2);g.globalAlpha=1}}
 let focusO=null,fpx=-99,fpy=-99;
 // pointing at a mineral brings it to the needle: the scale slides until its column stands in the middle, it opens into its crystal,
 // its column parts around it, and everything else shrinks with distance from the middle
@@ -170,23 +170,28 @@ function hardMove(){if(!HC||hDrag!=null)return;const sliding=Math.abs(toolT-tool
   let best=null,bd=14;HITS.forEach(h=>{const d=Math.hypot(h[0]-mx,h[1]-my);if(d<bd){bd=d;best=h[3]}});
   if(best&&best!==focusO){focusO=best;fpx=mx;fpy=my;toolT=best.m.h;hov=best;showCard(best.m)}
   else if(!best&&my<HC.y0-4&&Math.hypot(mx-W/2,my-(focusO?focusO._fy:0))>70){focusO=null;hov=null;fpx=mx;fpy=my;if(!pin)hideCard()}}
-function drawHard(t){const {y0,step,U}=HC;toolH+=(toolT-toolH)*.12;const cx0=W/2;
-  g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=.8;g.beginPath();g.moveTo(Math.max(0,X(.6)),y0);g.lineTo(Math.min(W,X(10.4)),y0);g.stroke();
-  for(let h=1;h<=10;h+=.5){const x=X(h);if(x<-40||x>W+40)continue;const big=h%1===0;g.strokeStyle=`rgba(${INK},${big?.5:.2})`;g.beginPath();g.moveTo(x,y0);g.lineTo(x,y0+(big?7:3));g.stroke();
-    if(big){const f=1-Math.min(1,Math.abs(x-cx0)/(W*.55))*.6;lab(x,y0+28,String(h),INK,.9*f,'13px','center');lab(x,y0+44,MOHS[h-1],MUTE,.75*f,'italic 11px','center')}}
-  TOOLS.forEach(([h,n])=>{const x=X(h);g.strokeStyle=`rgba(${INK},.3)`;g.beginPath();g.moveTo(x,y0+54);g.lineTo(x,y0+61);g.stroke();lab(x,y0+75,n,MUTE,.8,'italic 11px','center')});
-  lab(Math.max(30,X(1)-20),y0-8,'soft',MUTE,.7,'italic 12px','right');lab(Math.min(W-30,X(10)+20),y0-8,'hard',MUTE,.7,'italic 12px','left');
-  const F=focusO;HC.fk=(HC.fk||0)+((F?1:0)-(HC.fk||0))*.12;const fk=HC.fk,hits=[];
-  HC.items.forEach(o=>{const ty=y0-16-o.i*step;o.v+=(ty-o.y)*.05;o.v*=.8;o.y+=o.v;let x=X(o.h),y=o.y;if(x<-30||x>W+30)return;
-    const same=F&&o.h===F.h;if(same&&o!==F){const gap=34*fk;y=o.i>F.i?o.y-gap:Math.min(y0-7,o.y+gap*.35)}   // its column parts to make room
-    const isF=o===F,dist=Math.abs(x-cx0)/(W*.5),sc=isF?1:1-fk*Math.min(.55,dist*.7+(same?0:.15)),al=F?(isF?1:same?.6:Math.max(.25,.75-dist*.6)):1;
-    hmark(o,x,y,sc,al,isF,t);hits.push([x,y,9,o]);if(isF){o._fx=x;o._fy=y}});
-  if(F&&F._fx){lab(F._fx+44,F._fy-6,F.m.n,INK,fk,'15px');lab(F._fx+44,F._fy+12,`Mohs ${F.m.h}`,MUTE,fk,'italic 12px')}
-  g.strokeStyle=`rgba(${INK},.75)`;g.lineWidth=.8;g.beginPath();g.moveTo(cx0,96);g.lineTo(cx0,y0+12);g.stroke();
-  g.beginPath();g.moveTo(cx0-4,y0+19);g.lineTo(cx0,y0+12);g.lineTo(cx0+4,y0+19);g.stroke();g.lineWidth=1;
+// like the dial under a phone's photo filters: whatever stands at the needle is drawn large, the rest shrink and fade the further they are
+const FISH=dx=>{const R=W*.55,M=2.6,a=Math.min(1,Math.abs(dx)/R);return Math.sign(dx)*R*((M+1)*a/(M*a+1))};
+const SCL=dx=>.42+1.4*Math.exp(-Math.pow(dx/(W*.07),2));
+function drawHard(t){const {y0,step}=HC;toolH+=(toolT-toolH)*.12;const cx0=W/2,PX=h=>cx0+FISH(X(h)-cx0);
+  g.strokeStyle=`rgba(${INK},.45)`;g.lineWidth=.8;g.beginPath();g.moveTo(Math.max(0,PX(.6)),y0);g.lineTo(Math.min(W,PX(10.4)),y0);g.stroke();
+  for(let h=1;h<=10.001;h+=.25){const x=PX(h),dx=x-cx0,near=Math.exp(-Math.pow(dx/70,2)),big=Math.abs(h-Math.round(h))<.01;
+    g.strokeStyle=`rgba(${INK},${(big?.5:.2)+.45*near})`;g.lineWidth=.8+.6*near;g.beginPath();g.moveTo(x,y0);g.lineTo(x,y0+(big?6:3)+16*near);g.stroke();g.lineWidth=1;
+    if(big){const f=Math.max(.25,1-Math.abs(dx)/(W*.45));lab(x,y0+30+14*near,String(Math.round(h)),INK,f,`${12+10*near}px`,'center');lab(x,y0+46+18*near,MOHS[Math.round(h)-1],MUTE,.8*f,`italic ${11+3*near}px`,'center')}}
+  TOOLS.forEach(([h,n])=>{const x=PX(h),f=Math.max(.2,1-Math.abs(x-cx0)/(W*.4));lab(x,y0+92,n,MUTE,.8*f,'italic 11px','center')});
+  lab(Math.max(30,PX(1)-20),y0-8,'soft',MUTE,.7,'italic 12px','right');lab(Math.min(W-30,PX(10)+20),y0-8,'hard',MUTE,.7,'italic 12px','left');
+  const F=focusO;HC.fk=(HC.fk||0)+((F?1:0)-(HC.fk||0))*.12;const fk=HC.fk,hits=[],cols={};
+  HC.items.forEach(o=>{(cols[o.h]=cols[o.h]||[]).push(o)});
+  Object.entries(cols).forEach(([h,list])=>{const x=PX(+h),dx=x-cx0;if(x<-40||x>W+40)return;let sc=SCL(dx);sc=Math.min(sc,(y0-150)/(list.length*step));
+    const al0=Math.max(.22,Math.exp(-Math.pow(dx/(W*.25),2)));
+    list.forEach(o=>{const ty=y0-16-o.i*step*sc;o.v+=(ty-o.y)*.06;o.v*=.78;o.y+=o.v;let y=o.y;
+      const isF=o===F,same=F&&o.h===F.h;if(same&&!isF){const gap=74*fk;y=o.i>F.i?o.y-gap:Math.min(y0-7,o.y+gap*.3)}
+      const al=F?(isF?1:same?.35:al0*.5):al0;hmark(o,x,y,isF?1:sc,al,isF,t);hits.push([x,y,8*Math.max(.6,sc),o]);if(isF){o._fx=x;o._fy=y}})});
+  if(F&&F._fx){lab(F._fx+56,F._fy-8,F.m.n,INK,fk,'17px');lab(F._fx+56,F._fy+12,`Mohs ${F.m.h}`,MUTE,fk,'italic 13px')}
+  g.strokeStyle=`rgba(${INK},.7)`;g.lineWidth=.8;g.beginPath();g.moveTo(cx0,96);g.lineTo(cx0,y0+28);g.stroke();g.lineWidth=1;
   const nt=TOOLS.concat([[7,'quartz'],[8,'topaz'],[9,'corundum'],[10,'diamond'],[1,'talc'],[2,'gypsum']]).reduce((a,b)=>Math.abs(b[0]-toolH)<Math.abs(a[0]-toolH)?b:a);
-  lab(cx0,82,`${toolH.toFixed(1)}${Math.abs(nt[0]-toolH)<.3?' · '+nt[1]:''}`,INK,1,'14px','center');
-  lab(W/2,y0+102,`softer to the left of the needle, harder to the right  ·  point at a mineral to bring it here`,MUTE,.75,'italic 12px','center');
+  lab(cx0,82,`${toolH.toFixed(1)}${Math.abs(nt[0]-toolH)<.3?' · '+nt[1]:''}`,INK,1,'15px','center');
+  lab(W/2,y0+118,`softer to the left of the needle, harder to the right  ·  point at a mineral to bring it here`,MUTE,.7,'italic 12px','center');
   HITS=hits}
 let hDrag=null;
 cv.addEventListener('pointerdown',e=>{if(view==='hard'){focusO=null;hov=null;hDrag=e.clientX;cv.setPointerCapture(e.pointerId)}});
