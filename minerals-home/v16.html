@@ -291,16 +291,16 @@ function pickHover(){if(CARD){hovO=null;return}let b=null,bd=1e9;O.forEach(o=>{i
 
 /* ---------- holding one: a ring is drawn, the photo settles into it; turn it over for the label ---------- */
 const cardEl=document.getElementById('card'),spEl=document.getElementById('sp'),crumb=document.getElementById('crumb');let SP=null;
-const IMG=store('mn-img')||{};
+const IMG=store('mn-img2')||{};
 async function photo(m){if(IMG[m.n]!==undefined)return IMG[m.n];const tries=[m.n,m.n+' (mineral)'];
   for(const t of tries){try{const r=await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t));if(!r.ok)continue;const j=await r.json();if(j.type==='disambiguation')continue;
-    const src=(j.thumbnail&&j.thumbnail.source||'').replace(/\/\d+px-/,'/640px-');if(src){IMG[m.n]={src,page:j.content_urls&&j.content_urls.desktop.page};store('mn-img',IMG);return IMG[m.n]}}catch(e){}}
+    const raw=j.thumbnail&&j.thumbnail.source||'',src=raw.replace(/\/\d+px-/,'/500px-');if(src){IMG[m.n]={src,raw,page:j.content_urls&&j.content_urls.desktop.page};store('mn-img2',IMG);return IMG[m.n]}}catch(e){}}
   IMG[m.n]=null;return null}
 function openCard(o){const m=o.m;CARD=o;SP={m,vs:null};hovO=null;document.body.classList.add('holding');
   cardEl.classList.remove('flip');cardEl.classList.add('on');const fr=cardEl.querySelector('.front');fr.querySelector('.nm').textContent=m.n;fr.querySelector('.sb').textContent=`Mohs ${hr(m)} · ${REG[o.bz]}`;
   const im=fr.querySelector('img'),cr=fr.querySelector('.credit'),cc=fr.querySelector('canvas');im.classList.remove('in');im.removeAttribute('src');cr.innerHTML='';cc.style.opacity=0;
   const ring=fr.querySelector('.ring');ring.classList.remove('draw');void ring.getBoundingClientRect();ring.classList.add('draw');
-  photo(m).then(p=>{if(CARD!==o)return;if(p){im.onload=()=>im.classList.add('in');im.src=p.src;cr.innerHTML=`photo · <a href="${p.page}" target="_blank" rel="noopener">Wikipedia</a>`}else{cc.style.opacity=1}});
+  photo(m).then(p=>{if(CARD!==o)return;if(p){im.onload=()=>im.classList.add('in');im.onerror=()=>{if(p.raw&&im.src!==p.raw)im.src=p.raw;else{cc.style.opacity=1;cr.innerHTML=''}};im.src=p.src;cr.innerHTML=`photo · <a href="${p.page}" target="_blank" rel="noopener">Wikipedia</a>`}else{cc.style.opacity=1}});
   spEl.querySelector('h2').textContent=m.n;spEl.querySelector('.ch').textContent=fchem(m.chem);spEl.querySelector('.lead').textContent=m.note||'';
   const seen=new Set(),hb=m.habits.map((h,i)=>[h.l.split(/ with | and |,|;| — /)[0].toLowerCase().trim(),i]).filter(([l])=>!seen.has(l)&&seen.add(l)).slice(0,4);
   const hbEl=spEl.querySelector('.hb');hbEl.innerHTML=!m.x?`<span>no regular crystal shape</span>`:hb.map(([l,i])=>`<span class="${i===0?'on':''}">${l}</span>`).join(' · ');
