@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Minerals — how to draw a crystal</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#ebe9e3;overflow:hidden;font:400 13px "Newsreader",serif;color:#1c1b18}canvas{position:fixed;inset:0}</style></head><body><canvas id="c"></canvas>
+<script>
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,D=[],mx=-1,my=-1;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';g.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',rs);rs();addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY});
+const INK='28,27,24',MU='118,113,104';
+function rot(v,rx,ry){const c=Math.cos(ry),s=Math.sin(ry),x=v[0]*c+v[2]*s,z=-v[0]*s+v[2]*c,c2=Math.cos(rx),s2=Math.sin(rx);return[x,v[1]*c2-z*s2,v[1]*s2+z*c2]}
+function edges(h){const E=new Map();h.F.forEach((f,fi)=>f.forEach((a,i)=>{const b=f[(i+1)%f.length],k=a<b?a+'-'+b:b+'-'+a;E.has(k)?E.get(k).push(fi):E.set(k,[a,b,fi])}));return [...E.values()]}
+// line only: a face is "front" if its outward side faces you; an edge is hidden when both its faces are at the back
+function lines(h,x,y,s,rx,ry,al,lw){const P=h.V.map(v=>{const q=rot(v,rx,ry);return[x+q[0]*s,y+q[1]*s,q[2]]});const C=P.reduce((a,p)=>[a[0]+p[0]/P.length,a[1]+p[1]/P.length,a[2]+p[2]/P.length],[0,0,0]);
+  const front=h.F.map(f=>{const a=P[f[0]],b=P[f[1]],c=P[f[2]];let n=[(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]),(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]),(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])];
+    const m=f.reduce((s,i)=>[s[0]+P[i][0]/f.length,s[1]+P[i][1]/f.length,s[2]+P[i][2]/f.length],[0,0,0]);const out=(m[0]-C[0])*n[0]+(m[1]-C[1])*n[1]+(m[2]-C[2])*n[2];if(out<0)n=n.map(v=>-v);return n[2]>0});
+  h._E=h._E||edges(h);g.lineWidth=lw||1;h._E.forEach(e=>{const vis=front[e[2]]||front[e[3]];g.setLineDash(vis?[]:[1.5,2.5]);g.strokeStyle=`rgba(${INK},${al*(vis?.85:.3)})`;g.beginPath();g.moveTo(P[e[0]][0],P[e[0]][1]);g.lineTo(P[e[1]][0],P[e[1]][1]);g.stroke()});g.setLineDash([]);return front}
+function tone(h,x,y,s,rx,ry,al){const P=h.V.map(v=>{const q=rot(v,rx,ry);return[x+q[0]*s,y+q[1]*s,q[2]]});h.F.map(f=>{let z=0;f.forEach(i=>z+=P[i][2]);return[z/f.length,f]}).sort((a,b)=>a[0]-b[0]).forEach(([z,f])=>{
+  const a=P[f[0]],b=P[f[1]],c=P[f[2]],nx=(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]),ny=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]),nz=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]),L=Math.hypot(nx,ny,nz)||1,sh=Math.abs((-.45*nx-.6*ny+.66*nz)/L);
+  g.beginPath();f.forEach((i,k)=>k?g.lineTo(P[i][0],P[i][1]):g.moveTo(P[i][0],P[i][1]));g.closePath();g.fillStyle=`rgba(${235-60*(1-sh)|0},${233-60*(1-sh)|0},${227-60*(1-sh)|0},${al})`;g.fill();g.strokeStyle=`rgba(${INK},${al*.7})`;g.lineWidth=.8;g.stroke()})}
+function dot(x,y,c,r){g.fillStyle=c;g.beginPath();g.arc(x,y,r,0,7);g.fill();if(parseInt(c.slice(1),16)>0xc8c8c8){g.strokeStyle='rgba(28,27,24,.45)';g.lineWidth=.7;g.stroke()}}   // pale colours keep a hairline so they still read on paper
+const ROWS=[{k:'A',n:'Line only',s:'ink lines, hidden edges dashed; colour is one small dot'},{k:'B',n:'Line and paper tone',s:'faces shaded in the paper colour; colour is one small dot'},{k:'C',n:'Ring, then crystal',s:'the same small circle as the nav; point at one and it opens into its crystal'}];
+let pick=[];
+function frame(t){g.clearRect(0,0,W,H);if(!D.length){requestAnimationFrame(frame);return}
+  const rowH=(H-80)/3,n=Math.min(16,Math.floor((W-300)/70)),sp=(W-320)/n;
+  ROWS.forEach((R,ri)=>{const y=60+ri*rowH+rowH/2;g.fillStyle=`rgb(${INK})`;g.font='400 15px Newsreader';g.fillText(R.k+' · '+R.n,30,y-6);g.fillStyle=`rgb(${MU})`;g.font='italic 400 12px Newsreader';
+    const words=R.s.split(' ');let line='',yy=y+12;words.forEach(w=>{if(g.measureText(line+w).width>170){g.fillText(line,30,yy);yy+=15;line=''}line+=w+' '});g.fillText(line,30,yy);
+    g.strokeStyle='rgba(28,27,24,.08)';g.beginPath();g.moveTo(30,60+ri*rowH);g.lineTo(W-30,60+ri*rowH);g.stroke();
+    pick.slice(0,n).forEach((m,i)=>{const x=290+sp*(i+.5),s=Math.min(24,sp*.32),near=Math.hypot(mx-x,my-y)<sp*.45,rx=-.38,ry=t/3500+i*.6,h=m.habits[0],col=m.colors[0].hex;
+      if(R.k==='A'){lines(h,x,y,s*(near?1.4:1),rx,ry,1,near?1:.8);dot(x+s*1.25,y+s*1.1,col,2.6)}
+      else if(R.k==='B'){tone(h,x,y,s*(near?1.4:1),rx,ry,1);dot(x+s*1.25,y+s*1.1,col,2.6)}
+      else{const k=pick[i]._k=(pick[i]._k||0)+((near?1:0)-(pick[i]._k||0))*.15;
+        if(k<.98){g.globalAlpha=1-k;g.strokeStyle=`rgba(${INK},.6)`;g.lineWidth=1;g.beginPath();g.arc(x,y,7,0,7);g.stroke();dot(x,y,col,2.6);g.globalAlpha=1}
+        if(k>.02){g.globalAlpha=k;lines(h,x,y,s*1.4*k,rx,ry,1,1);g.globalAlpha=1}}
+      if(near){g.fillStyle=`rgb(${INK})`;g.font='400 12px Newsreader';g.textAlign='center';g.fillText(m.n,x,y+s*1.4+22);g.fillStyle=`rgb(${MU})`;g.font='italic 400 11px Newsreader';g.fillText(m.habits[0].l.split(/ with |,/)[0].toLowerCase(),x,y+s*1.4+36);g.textAlign='left'}})});
+  requestAnimationFrame(frame)}
+fetch('minerals.json').then(r=>r.json()).then(d=>{D=d;const want=['Pyrite','Fluorite','Quartz','Calcite','Garnet','Beryl','Galena','Halite','Corundum','Diamond','Spinel','Zircon','Topaz','Apatite','Barite','Staurolite','Tourmaline','Gypsum'];
+  pick=want.map(n=>D.find(m=>m.n===n)).filter(Boolean);D.forEach(m=>{if(pick.length<16&&!pick.includes(m))pick.push(m)});requestAnimationFrame(frame)});
+</script></body></html>
