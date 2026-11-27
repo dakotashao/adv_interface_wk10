@@ -133,13 +133,17 @@ function drawPlace(t){const R=Math.min(W,H)*.32,cx0=W/2,cy0=H/2+14,k=ease((t-T0)
   PL.forEach(pl=>{const u=ll2v(pl.lat,pl.lon),q=gview(u);pl.sx=cx0+q[0]*R;pl.sy=cy0+q[1]*R;pl.sz=q[2];if(q[2]<.02)return;
     let e1=[u[2],0,-u[0]];const l1=Math.hypot(...e1)||1;e1=e1.map(x=>x/l1);const e2=[u[1]*e1[2]-u[2]*e1[1],u[2]*e1[0]-u[0]*e1[2],u[0]*e1[1]-u[1]*e1[0]];
     const open=hovPlace===pl,n=pl.ms.length;pl.o=(pl.o||0)+((open?1:0)-(pl.o||0))*.12;const fade=Math.min(1,(q[2]-.02)*5)*k;
+    // at rest a place is one circle, its size the number of minerals found there; pointing at it opens it into its crystals
+    const holds=hm&&pl.ms.some(o=>o.m===hm),rr=2.5+Math.sqrt(n)*2.3;
+    if(pl.o<.97){g.globalAlpha=fade*(1-pl.o)*(hm?(holds?1:.3):hovPlace&&!open?.45:1);g.strokeStyle=`rgba(${INK},${holds?.85:.5})`;g.lineWidth=holds?1:.7;g.beginPath();g.arc(pl.sx,pl.sy,rr,0,7);g.stroke();g.globalAlpha=1;g.lineWidth=1}
+    if(pl.o<.05)return;
     pl.ms.forEach((o,i)=>{const r=Math.sqrt(i+.5)*(.017+.03*pl.o),ang=i*2.39996,base=[0,1,2].map(j=>u[j]*(1+.01+.07*pl.o)+(e1[j]*Math.cos(ang)+e2[j]*Math.sin(ang))*r);
       const b=gview(base),x=cx0+b[0]*R,y=cy0+b[1]*R,col=o.m.colors[0].hex,al=fade*(hm?(hm===o.m?1:.25):hovPlace&&!open?.35:1);
       if((pl.o>.05||hm===o.m)&&o.m.x){   // open: the crystal stands on the ground, its c axis pointing away from the centre
         const h=o.m.habits[0],sz=R*.03*Math.max(pl.o,hm===o.m?1:0),spin=t/5000+o.seed,c=Math.cos(spin),sn=Math.sin(spin);
         const P=h.V.map(v=>{const X=v[0]*c+v[2]*sn,Z=-v[0]*sn+v[2]*c,Y=v[1];const w=[0,1,2].map(j=>base[j]*R+(e1[j]*X-Y*u[j]+e2[j]*Z)*sz+u[j]*sz);const p=gview(w);return[cx0+p[0],cy0+p[1],p[2]]});
-        g.globalAlpha=al;ink(g,h,P,1,.9);g.globalAlpha=1;dot(g,x,y,col,2,al)}
-      else{g.globalAlpha=al;g.strokeStyle=`rgba(${INK},.55)`;g.lineWidth=.9;g.beginPath();g.arc(x,y,3.6,0,7);g.stroke();g.globalAlpha=1;dot(g,x,y,col,1.5,al)}
+        g.globalAlpha=al;ink(g,h,P,1,.9);g.globalAlpha=1}
+      else{g.globalAlpha=al*pl.o;g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=.7;g.beginPath();g.arc(x,y,3,0,7);g.stroke();g.globalAlpha=1}
       hits.push([x,y,open?7:4,{m:o.m,col,pl}])})});
   if(hovPlace&&hovPlace.sz>0)lab(hovPlace.sx+22,hovPlace.sy-44,`${hovPlace.n}  ×${hovPlace.ms.length}`,INK,1,'14px');
   if(hov&&hov.pl&&hov.pl!==hovPlace)lab(hov.pl.sx+18,hov.pl.sy-16,hov.pl.n,MUTE,1,'italic 12px');
