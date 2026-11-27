@@ -148,16 +148,19 @@ function drawPlace(t){G.z+=((PF?1.9:1)-G.z)*.08;const R=Math.min(W,H)*.32*G.z,cx
       else{g.globalAlpha=al*pl.o;g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=.7;g.beginPath();g.arc(x,y,3,0,7);g.stroke();g.globalAlpha=1}
       hits.push([x,y,open?7:4,{m:o.m,col,pl}])})});
   if(hovPlace&&hovPlace.sz>0&&hovPlace!==PF){g.strokeStyle=`rgba(${INK},.9)`;g.beginPath();g.arc(hovPlace.sx,hovPlace.sy,2.5+Math.sqrt(hovPlace.ms.length)*2.3+3,0,7);g.stroke();lab(hovPlace.sx+16+Math.sqrt(hovPlace.ms.length)*2.3,hovPlace.sy+4,`${hovPlace.n}  ×${hovPlace.ms.length}`,INK,1,'14px')}
-  if(PF){const e=ease(Math.min(1,(G.z-1)/.9)),px=PF.sx,py=PF.sy,n=PF.ms.length,rr=Math.min(H*.36,Math.max(130,n*54/(2*Math.PI)))*e;
-    lab(px,py-rr-74,`${PF.n}`,INK,e,'18px','center');lab(px,py-rr-56,`${n} minerals found here · click outside to go back`,MUTE,e,'italic 12px','center');
-    g.fillStyle=`rgba(235,233,227,${.85*e})`;g.beginPath();g.arc(px,py,rr+44,0,7);g.fill();g.strokeStyle=`rgba(${INK},${.25*e})`;g.beginPath();g.arc(px,py,rr,0,7);g.stroke();
+  if(PF){const e=ease(Math.min(1,(G.z-1)/.9)),px=PF.sx,py=PF.sy,n=PF.ms.length,lt=t-(PF.t0||0),ms=PF.ms.slice().sort((a,b)=>a.m.h-b.m.h);
+    g.fillStyle=`rgba(235,233,227,${.88*e})`;g.fillRect(0,0,W,H);   // the earth steps back
     g.fillStyle=`rgba(${INK},${e})`;g.beginPath();g.arc(px,py,3,0,7);g.fill();
-    PF.ms.forEach((o,i)=>{const a=-Math.PI/2+i*2*Math.PI/n,x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr,isH=hov&&hov.m===o.m;
-      g.strokeStyle=`rgba(${INK},${(isH?.5:.12)*e})`;g.beginPath();g.moveTo(px,py);g.lineTo(x,y);g.stroke();   // a spoke from the place to each of its minerals
-      if(o.m.x){const h=o.m.habits[0],sz=(isH?30:21)*e,P=h.V.map(v=>{const q=rot(v,-.38,t/3200+o.seed);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=e*(hov&&!isH?.45:1);ink(g,h,P,1,1);g.globalAlpha=1}
-      else{g.strokeStyle=`rgba(${INK},${.6*e})`;g.beginPath();g.arc(x,y,6,0,7);g.stroke()}
-      const ca=Math.cos(a),sa=Math.sin(a);lab(x+ca*36,y+sa*36+4,o.m.n,isH?INK:MUTE,e*(hov&&!isH?.5:1),(isH?'':'italic ')+'11px',ca>.3?'left':ca<-.3?'right':'center');
-      hits.push([x,y,16,{m:o.m,col:o.m.colors[0].hex,pl:PF}])})}
+    lab(px,py-60,PF.n,INK,e,'18px','center');lab(px,py-42,`${n} minerals found here · click outside to go back`,MUTE,e,'italic 12px','center');
+    const cw=100,ch=128,rows=Math.ceil(n/Math.min(n,Math.floor((W-160)/cw))),per=Math.ceil(n/rows),by=Math.min(py+110,H-rows*ch-30);
+    g.strokeStyle=`rgba(${INK},${.4*e})`;g.lineWidth=.8;g.beginPath();g.moveTo(px,py);g.lineTo(px,by-30);g.lineTo(W/2,by-30);g.stroke();
+    for(let r=0;r<rows;r++){const m=Math.min(per,n-r*per),y=by+r*ch+70;g.beginPath();g.moveTo(W/2-m*cw/2,y);g.lineTo(W/2+m*cw/2,y);g.stroke()}g.lineWidth=1;   // one shelf line per row, soft to hard
+    ms.forEach((o,i)=>{const r=Math.floor(i/per),c=i%per,m=Math.min(per,n-r*per),cx=W/2+(c-(m-1)/2)*cw,cy=by+r*ch,k=ease((lt-160-i*70)/520);if(k<=0)return;const isH=hov&&hov.m===o.m;
+      o.lift=(o.lift||0)+((isH?1:0)-(o.lift||0))*.2;const y=cy+36-(1-k)*36-o.lift*12;
+      g.globalAlpha=k*e*(hov&&!isH?.45:1);
+      if(o.m.x){const h=o.m.habits[0],sz=21*(1+.35*o.lift),P=h.V.map(v=>{const q=rot(v,-.38,t/3200+o.seed);return[cx+q[0]*sz,y+q[1]*sz,q[2]]});ink(g,h,P,1,1)}else{g.strokeStyle=`rgba(${INK},.6)`;g.beginPath();g.arc(cx,y,6,0,7);g.stroke()}
+      g.globalAlpha=1;lab(cx,cy+88,o.m.n,isH?INK:MUTE,k*e,(isH?'':'italic ')+'11px','center');lab(cx,cy+102,'Mohs '+o.m.h,MUTE,.6*k*e,'italic 10px','center');
+      hits.push([cx,y,22,{m:o.m,col:o.m.colors[0].hex,pl:PF}])})}
 
   if(!PF)lab(W/2,H-40,'drag to turn the earth · click a place to look closer',MUTE,.6,'italic 12px','center');HITS=hits}
 let hovPlace=null;
@@ -234,7 +237,7 @@ addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY;
   if(best){showCard(best.m);tip.style.opacity=1;tip.style.left=(mx+16)+'px';tip.style.top=(my-26)+'px';tip.innerHTML=`<b>${best.m.n}</b>  <span>${best.cn?best.cn.toLowerCase()+(best.v&&best.v!==best.m.n?' · '+best.v.toLowerCase():''):'Mohs '+best.m.h}</span>`}
   else{tip.style.opacity=0;if(!pin)hideCard()}
   cv.style.cursor=best?'pointer':view==='place'?'grab':'default'});
-cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if(pin)showCard(hov.m);return}pin=null;hideCard();if(view==='place'&&(hovPlace||PF)){PF=hovPlace&&hovPlace!==PF?hovPlace:null;return}if(view==='place'){G.drag=true;G.x=e.clientX;G.y=e.clientY;cv.setPointerCapture(e.pointerId)}});
+cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if(pin)showCard(hov.m);return}pin=null;hideCard();if(view==='place'&&(hovPlace||PF)){PF=hovPlace&&hovPlace!==PF?hovPlace:null;if(PF)PF.t0=performance.now();return}if(view==='place'){G.drag=true;G.x=e.clientX;G.y=e.clientY;cv.setPointerCapture(e.pointerId)}});
 addEventListener('pointerup',()=>{G.drag=false});
 card.addEventListener('pointerleave',()=>{if(!pin)hideCard()});
 function loop(t){g.clearRect(0,0,W,H);if(D.length){if(view==='colour')drawColour(t);else if(view==='place')drawPlace(t);else drawHard(t);drawCard(t)}requestAnimationFrame(loop)}
