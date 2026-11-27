@@ -33,166 +33,149 @@ button{all:unset;cursor:pointer}
 <div id="tip"></div><div id="tool"><div class="k"></div><b></b><span></span></div>
 <div id="card"><canvas id="cc" width="540" height="340"></canvas><h2></h2><div class="hb"></div><div class="rows"></div><div class="nt"></div></div>
 <script>
-/* Three ways into the same 107 minerals. Every mineral is drawn as its own crystal: the faces come from its real crystal forms. */
+/* Three ways into the same 107 minerals. At rest every mineral is the small circle of the nav, its centre its colour;
+   point at one and the circle opens into its own crystal, drawn in ink from its real crystal forms. */
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,DPR;
 function rs(){DPR=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';g.setTransform(DPR,0,0,DPR,0,0);lay()}
 const INK='28,27,24',MUTE='118,113,104',FONT='"Newsreader", serif';
 let D=[],LAND=[],view='colour',mx=-1,my=-1,hov=null,pin=null,T0=performance.now();
 const ease=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
-function rgb(h){const n=parseInt(h.slice(1),16);return[n>>16,n>>8&255,n&255]}
-/* ---------- one crystal ---------- */
+const pale=h=>{const n=parseInt(h.slice(1),16);return((n>>16)+(n>>8&255)+(n&255))/3>190};
+/* ---------- drawing: the ring, and the crystal in ink ---------- */
 function rot(v,rx,ry){const c=Math.cos(ry),s=Math.sin(ry),x=v[0]*c+v[2]*s,z=-v[0]*s+v[2]*c,c2=Math.cos(rx),s2=Math.sin(rx);return[x,v[1]*c2-z*s2,v[1]*s2+z*c2]}
-// draw a crystal from already-transformed points P (screen x, screen y, depth); faces painted back to front
-function paint(ctx,P,F,col,al,lw,dash){const [r,gg,b]=rgb(col);const fs=F.map(f=>{let z=0;f.forEach(i=>z+=P[i][2]);return[z/f.length,f]}).sort((a,b)=>a[0]-b[0]);
-  fs.forEach(([z,f])=>{const a=P[f[0]],b1=P[f[1]],c=P[f[2]];const nx=(b1[1]-a[1])*(c[2]-a[2])-(b1[2]-a[2])*(c[1]-a[1]),ny=(b1[2]-a[2])*(c[0]-a[0])-(b1[0]-a[0])*(c[2]-a[2]),nz=(b1[0]-a[0])*(c[1]-a[1])-(b1[1]-a[1])*(c[0]-a[0]);
-    const L=Math.hypot(nx,ny,nz)||1,sh=.62+.38*Math.abs((-.45*nx-.6*ny+.66*nz)/L);
-    ctx.beginPath();f.forEach((i,k)=>k?ctx.lineTo(P[i][0],P[i][1]):ctx.moveTo(P[i][0],P[i][1]));ctx.closePath();
-    ctx.fillStyle=`rgba(${r*sh|0},${gg*sh|0},${b*sh|0},${al*.82})`;ctx.fill();ctx.strokeStyle=`rgba(${INK},${al*.55})`;ctx.lineWidth=lw||.7;ctx.stroke()})}
-function glyph(ctx,m,hab,x,y,s,col,al,rx,ry){const h=m.habits[hab||0];const P=h.V.map(v=>{const q=rot(v,rx,ry);return[x+q[0]*s,y+q[1]*s,q[2]]});paint(ctx,P,h.F,col,al);return P}
+function edges(h){if(h._E)return h._E;const E=new Map();h.F.forEach((f,fi)=>f.forEach((a,i)=>{const b=f[(i+1)%f.length],k=a<b?a+'-'+b:b+'-'+a;E.has(k)?E.get(k).push(fi):E.set(k,[a,b,fi])}));return h._E=[...E.values()]}
+// P: points already on screen (x, y, depth toward you). Edges between two faces turned away are hidden, drawn dashed
+function ink(ctx,h,P,al,lw){const C=P.reduce((a,p)=>[a[0]+p[0]/P.length,a[1]+p[1]/P.length,a[2]+p[2]/P.length],[0,0,0]);
+  const front=h.F.map(f=>{const a=P[f[0]],b=P[f[1]],c=P[f[2]];let n=[(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]),(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]),(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])];
+    let m=[0,0,0];f.forEach(i=>{m[0]+=P[i][0]/f.length;m[1]+=P[i][1]/f.length;m[2]+=P[i][2]/f.length});if((m[0]-C[0])*n[0]+(m[1]-C[1])*n[1]+(m[2]-C[2])*n[2]<0)n=n.map(v=>-v);return n[2]>0});
+  ctx.lineWidth=lw||1;edges(h).forEach(e=>{const vis=front[e[2]]||front[e[3]];ctx.setLineDash(vis?[]:[1.5,2.5]);ctx.strokeStyle=`rgba(${INK},${al*(vis?.85:.28)})`;ctx.beginPath();ctx.moveTo(P[e[0]][0],P[e[0]][1]);ctx.lineTo(P[e[1]][0],P[e[1]][1]);ctx.stroke()});ctx.setLineDash([])}
+function dot(ctx,x,y,col,r,al){ctx.globalAlpha=al;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();if(pale(col)){ctx.strokeStyle=`rgba(${INK},.45)`;ctx.lineWidth=.7;ctx.stroke()}ctx.globalAlpha=1}
+// o carries its own opening spring o.k; returns nothing, records nothing
+function mark(o,x,y,col,al,open,t,s){o.k=(o.k||0)+((open?1:0)-(o.k||0))*.16;const k=o.k,m=o.m;
+  if(k<.97){g.globalAlpha=al*(1-k);g.strokeStyle=`rgba(${INK},.62)`;g.lineWidth=1;g.beginPath();g.arc(x,y,6,0,7);g.stroke();g.globalAlpha=1;dot(g,x,y,col,2.5,al*(1-k))}
+  if(k>.03){const h=m.habits[0],sz=(s||20)*(.35+.65*k),ry=t/3200+(o.seed||0);const P=h.V.map(v=>{const q=rot(v,-.38,ry);return[x+q[0]*sz,y+q[1]*sz,q[2]]});g.globalAlpha=k*al;ink(g,h,P,1,1);g.globalAlpha=1;dot(g,x+sz*1.1,y+sz*1.05,col,2.5,k*al)}}
 
-/* ---------- the card: the held mineral turns slowly, its back edges dashed ---------- */
-const card=document.getElementById('card'),cc=document.getElementById('cc'),cx=cc.getContext('2d');let cardM=null,cardHab=0,cardCol=null;
-function showCard(m,col){if(cardM!==m){cardM=m;cardHab=0}cardCol=col||m.colors[0].hex;card.classList.add('on');
+/* ---------- the card: the held mineral turns slowly, in ink ---------- */
+const card=document.getElementById('card'),cc=document.getElementById('cc'),cx=cc.getContext('2d');let cardM=null,cardHab=0;
+function showCard(m){if(cardM!==m){cardM=m;cardHab=0}card.classList.add('on');
   card.querySelector('h2').textContent=m.n;
   card.querySelector('.hb').innerHTML=m.habits.map((h,i)=>`<button data-i="${i}" class="${i===cardHab?'on':''}">${h.l.split(/ with | and |,/)[0].toLowerCase()}</button>`).join('');
-  card.querySelectorAll('.hb button').forEach(b=>b.onclick=()=>{cardHab=+b.dataset.i;showCard(m,cardCol)});
+  card.querySelectorAll('.hb button').forEach(b=>b.onclick=()=>{cardHab=+b.dataset.i;showCard(m)});
   card.querySelector('.rows').innerHTML=`<div class="r"><span>Colour</span><span><span class="sw">${m.colors.map(c=>`<i style="background:${c.hex}"></i>`).join('')}</span>${m.colors[0].c.toLowerCase()}${m.colors.length>1?' …':''}</span></div>
     <div class="r"><span>Hardness</span><span>Mohs ${m.h}</span></div><div class="r"><span>Crystal</span><span>${m.sys}</span></div>
     <div class="r"><span>Found in</span><span>${m.loc.slice(0,3).map(l=>l.n).join(', ')}${m.loc.length>3?' +'+(m.loc.length-3):''}</span></div><div class="r"><span>Formula</span><span>${m.chem}</span></div>`;
   card.querySelector('.nt').textContent=(m.note||m.desc).split(/(?<=\.)\s/)[0]}
 function hideCard(){if(!pin){card.classList.remove('on');cardM=null}}
-function drawCard(t){if(!cardM)return;cx.setTransform(2,0,0,2,0,0);cx.clearRect(0,0,270,170);const h=cardM.habits[cardHab],ry=t/2600,rx=-.38,s=62;
-  const P=h.V.map(v=>{const q=rot(v,rx,ry);return[135+q[0]*s,86+q[1]*s,q[2]]});
-  // hidden edges dashed, then the faces you can see
-  cx.setLineDash([2,3]);cx.strokeStyle=`rgba(${INK},.35)`;cx.lineWidth=.8;h.F.forEach(f=>{cx.beginPath();f.forEach((i,k)=>k?cx.lineTo(P[i][0],P[i][1]):cx.moveTo(P[i][0],P[i][1]));cx.closePath();cx.stroke()});cx.setLineDash([]);
-  paint(cx,P,h.F,cardCol,.9,.9)}
+function drawCard(t){if(!cardM)return;cx.setTransform(2,0,0,2,0,0);cx.clearRect(0,0,270,170);const h=cardM.habits[cardHab],s=62;
+  const P=h.V.map(v=>{const q=rot(v,-.38,t/2600);return[135+q[0]*s,86+q[1]*s,q[2]]});ink(cx,h,P,1,1)}
 
-/* ---------- A · Colour: white light goes into a prism and fans out; each mineral sits on the ray of its colour ---------- */
-const RAYS=[{k:'red',h:['#b8322f'],c:'#b8322f'},{k:'orange',h:['#e0782f','#c98a2b'],c:'#e0782f'},{k:'yellow',h:['#e2c13b','#c9a63a','#c4a43c'],c:'#e2c13b'},{k:'yellow-green',h:['#9aab3c','#8a8f3a'],c:'#9aab3c'},
-  {k:'green',h:['#3f8a4c'],c:'#3f8a4c'},{k:'blue-green',h:['#3b9a93','#3b8fa0','#3aa3a0','#3aa3b0'],c:'#3b9a93'},{k:'blue',h:['#3b63b4'],c:'#3b63b4'},{k:'violet',h:['#7a4d9f','#a68cc4'],c:'#7a4d9f'}];
-const OFF=[{k:'pink',h:['#e29aae'],c:'#e29aae',why:'not in the rainbow'},{k:'brown',h:['#7b5335','#9a7a3a'],c:'#7b5335',why:'not in the rainbow'}];
-const CLEAR=['#dfe6e8','#f1efe8'],DARK=['#2b2926','#97958f','#a9adb2','#8d9298'];
+/* ---------- A · Colour: a colour wheel. Hue goes round, the vivid sit at the rim, the pale toward the middle;
+   colourless, grey and black stand on the axis through the centre ---------- */
+function hsv(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)/255,g2=(n>>8&255)/255,b=(n&255)/255,mx2=Math.max(r,g2,b),mn=Math.min(r,g2,b),d=mx2-mn;let h=0;
+  if(d){h=mx2===r?((g2-b)/d)%6:mx2===g2?(b-r)/d+2:(r-g2)/d+4;h*=60;if(h<0)h+=360}return{h,s:mx2?d/mx2:0,v:mx2}}
 let A=null;
-function layColour(){const px=W*.24,py=H*.47,ps=Math.min(W,H)*.13,fan=[];const x1=W-(W>1100?330:150);
-  const all=[...RAYS.map((r,i)=>({...r,a:-.28+i*(.52/(RAYS.length-1))})),...OFF.map((r,i)=>({...r,a:.36+i*.08,off:1}))];
-  all.forEach(r=>{const it=[];D.forEach(m=>m.colors.forEach(c=>{if(r.h.includes(c.hex))it.push({m,col:c.hex,cn:c.c})}));it.sort((a,b)=>a.m.h-b.m.h);r.it=it});
-  const clear=[],dark=[];D.forEach(m=>m.colors.forEach(c=>{if(CLEAR.includes(c.hex))clear.push({m,col:c.hex,cn:c.c});if(DARK.includes(c.hex))dark.push({m,col:c.hex,cn:c.c})}));
-  A={px,py,ps,rays:all,clear,dark,x1}}
-function drawColour(t){const {px,py,ps}=A;const k=ease((t-T0)/1600);
-  // the prism: a glass triangle turning a little
-  const tri=[[0,-1.05,0],[.95,.6,0],[-.95,.6,0]].map(v=>[v[0]*ps,v[1]*ps]);const depth=ps*.55,ry=Math.sin(t/4000)*.25;
-  const pt=(v,z)=>{const q=rot([v[0],v[1],z],-.18,ry);return[px+q[0],py+q[1],q[2]]};
-  const F=tri.map(v=>pt(v,-depth/2)),B=tri.map(v=>pt(v,depth/2));g.lineWidth=1;
-  [[F,1],[B,.35]].forEach(([Q,al])=>{g.strokeStyle=`rgba(${INK},${al*.7})`;g.beginPath();Q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();g.stroke()});
-  for(let i=0;i<3;i++){g.strokeStyle=`rgba(${INK},.35)`;g.beginPath();g.moveTo(F[i][0],F[i][1]);g.lineTo(B[i][0],B[i][1]);g.stroke()}
-  g.fillStyle='rgba(255,255,255,.25)';g.beginPath();F.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.fill();
-  // white light in
-  const inA=[0,py-ps*.15],hit=[(F[0][0]+F[2][0])/2,(F[0][1]+F[2][1])/2+ps*.05],out=[(F[0][0]+F[1][0])/2+4,(F[0][1]+F[1][1])/2+ps*.1];
-  g.strokeStyle=`rgba(${INK},.7)`;g.lineWidth=1.4;g.beginPath();g.moveTo(inA[0],inA[1]);g.lineTo(hit[0],hit[1]);g.stroke();g.lineWidth=1;
-  g.strokeStyle=`rgba(${INK},.25)`;g.beginPath();g.moveTo(hit[0],hit[1]);g.lineTo(out[0],out[1]);g.stroke();
-  lab(14,inA[1]-10,'white light',MUTE,1,'italic 12px');
-  const hm=hov&&hov.m,rays=A.rays,len=A.x1-out[0];let hits=[];
-  rays.forEach(r=>{const ex=out[0]+Math.cos(r.a)*len*k,ey=out[1]+Math.sin(r.a)*len*k*1.0,on=hovRay===r;
-    const [cr,cg,cb]=rgb(r.c);g.strokeStyle=`rgba(${cr},${cg},${cb},${r.off?.28:on?.9:.5})`;g.lineWidth=on?1.6:1;if(r.off)g.setLineDash([3,4]);g.beginPath();g.moveTo(out[0],out[1]);g.lineTo(ex,ey);g.stroke();g.setLineDash([]);g.lineWidth=1;
-    r.ex=ex;r.ey=ey;r.ox=out[0];r.oy=out[1];
-    const n=r.it.length;r.it.forEach((it,i)=>{const u=.24+.74*(i+.5)/n,zig=(i%2?1:-1)*Math.min(9,len*.012),x=out[0]+Math.cos(r.a)*len*u*k-Math.sin(r.a)*zig,y=out[1]+Math.sin(r.a)*len*u*k+Math.cos(r.a)*zig;
-      const same=hm===it.m,al=hm?(same?1:.22):(hovRay&&hovRay!==r?.35:1),s=same?10:on?8:6.2;
-      glyph(g,it.m,0,x,y,s,it.col,al*k,-.4,t/3000+i);it.x=x;it.y=y;hits.push([x,y,9,it])});
-    lab(ex+8,ey+4,`${r.k}  ×${n}`+(r.off?'  · '+r.why:''),r.off?MUTE:INK,(on?1:.75)*k,(r.off?'italic ':'')+'12px')});
-  // colourless minerals let the light straight through; the dark ones lie in the prism's shadow
-  const sx=out[0]+12,sy=out[1]-ps*.75;lab(px-ps*.9,py+ps*1.35,'black, grey, metal · they take the light in',MUTE,.8*k,'italic 12px');
-  A.dark.forEach((it,i)=>{const col=i%14,row=i/14|0,x=px-ps*.9+col*16,y=py+ps*1.12-row*15;const same=hm===it.m,al=hm?(same?1:.22):1;glyph(g,it.m,0,x,y,same?9:6,it.col,al*k,-.4,t/3000+i);it.x=x;it.y=y;hits.push([x,y,8,it])});
-  lab(px-ps*.9,py-ps*1.55,'colourless, white · the light goes straight through',MUTE,.8*k,'italic 12px');
-  A.clear.forEach((it,i)=>{const col=i%17,row=i/17|0,x=px-ps*.9+col*15,y=py-ps*1.35+row*15;const same=hm===it.m,al=hm?(same?1:.22):1;glyph(g,it.m,0,x,y,same?9:5.6,it.col,al*k,-.4,t/3000+i);it.x=x;it.y=y;hits.push([x,y,8,it])});
-  // pointing at one mineral threads all of its colours together
-  if(hm){const pts=hits.filter(h=>h[3].m===hm).map(h=>h);g.strokeStyle=`rgba(${INK},.5)`;g.setLineDash([2,3]);g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.setLineDash([]);
-    if(pts.length>1)lab(pts[pts.length-1][0]+12,pts[pts.length-1][1]-10,`${hm.n} comes in ${pts.length} colours`,INK,1,'italic 12px')}
+function layColour(){const cx0=W/2,cy0=H/2+16,R=Math.min(W,H)*.33,it=[],by={};
+  D.forEach(m=>m.colors.forEach(c=>(by[c.hex]=by[c.hex]||[]).push({m,col:c.hex,cn:c.c,seed:Math.random()*6})));
+  Object.entries(by).forEach(([hex,list])=>{const q=hsv(hex);let bx,byy;
+    if(q.s<.14){bx=cx0;byy=cy0+(.5-q.v)*R*.62}   // colourless at the top of the middle, black at the bottom
+    else{const a=(q.h-90)*Math.PI/180,r=R*(.6+.4*Math.min(1,q.s*q.v*1.3));bx=cx0+Math.cos(a)*r;byy=cy0+Math.sin(a)*r}
+    list.forEach((o,i)=>{const rr=Math.sqrt(i)*8.2,aa=i*2.39996;o.tx=bx+Math.cos(aa)*rr;o.ty=byy+Math.sin(aa)*rr;it.push(o)})});   // each colour is a small sunflower of circles
+  for(let n=0;n<60;n++)for(let i=0;i<it.length;i++)for(let j=i+1;j<it.length;j++){const a=it[i],b=it[j],dx=b.tx-a.tx,dy=b.ty-a.ty,d=Math.hypot(dx,dy);
+    if(d<14.5&&d>0){const p=(14.5-d)/2;a.tx-=dx/d*p;a.ty-=dy/d*p;b.tx+=dx/d*p;b.ty+=dy/d*p}}
+  it.forEach(o=>{o.x=cx0;o.y=cy0});A={cx0,cy0,R,it}}
+const HUES=['#b8322f','#e0782f','#e2c13b','#9aab3c','#3f8a4c','#3b9a93','#3b63b4','#7a4d9f','#e29aae'].map((h,i)=>[hsv(h).h,['red','orange','yellow','yellow-green','green','blue-green','blue','violet','pink'][i]]);
+function drawColour(t){const {cx0,cy0,R,it}=A,k=ease((t-T0)/1300);
+  g.strokeStyle=`rgba(${INK},.12)`;g.lineWidth=1;g.beginPath();g.arc(cx0,cy0,R*1.12,0,7);g.stroke();g.beginPath();g.arc(cx0,cy0,R*.45,0,7);g.stroke();
+  g.beginPath();g.moveTo(cx0,cy0-R*.45);g.lineTo(cx0,cy0+R*.45);g.stroke();
+  HUES.forEach(([h,n])=>{const a=(h-90)*Math.PI/180;lab(cx0+Math.cos(a)*R*1.25,cy0+Math.sin(a)*R*1.25+4,n,MUTE,.8*k,'italic 12px','center')});
+  lab(cx0-R*.5,cy0-R*.25,'colourless · white',MUTE,.8*k,'italic 12px','right');lab(cx0-R*.5,cy0+R*.25,'black · grey · metal',MUTE,.8*k,'italic 12px','right');
+  const hm=hov&&hov.m,hits=[];
+  it.forEach((o,i)=>{o.x+=(o.tx-o.x)*(.05+.0004*i);o.y+=(o.ty-o.y)*(.05+.0004*i);const same=hm===o.m,al=hm?(same?1:.25):1;
+    mark(o,o.x,o.y,o.col,al*k,same&&hov===o,t,22);hits.push([o.x,o.y,8,o])});
+  if(hm){const pts=it.filter(o=>o.m===hm);if(pts.length>1){g.strokeStyle=`rgba(${INK},.45)`;g.setLineDash([2,3]);g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();g.setLineDash([]);
+    pts.forEach(p=>{if(p!==hov){g.strokeStyle=`rgba(${INK},.8)`;g.beginPath();g.arc(p.x,p.y,8.5,0,7);g.stroke()}});
+    lab(hov.x+18,hov.y+30,`${hm.n} comes in ${pts.length} colours`,INK,1,'italic 12px')}}
   HITS=hits}
-let hovRay=null;
-function rayAt(x,y){if(view!=='colour'||!A)return null;let best=null,bd=10;A.rays.forEach(r=>{const dx=r.ex-r.ox,dy=r.ey-r.oy,L2=dx*dx+dy*dy,u=((x-r.ox)*dx+(y-r.oy)*dy)/L2;if(u<.1||u>1.05)return;const d=Math.abs((x-r.ox)*dy-(y-r.oy)*dx)/Math.sqrt(L2);if(d<bd){bd=d;best=r}});return best}
 
-/* ---------- D · Place: a druse planet. Each mineral grows out of the ground where it is found, its long axis pointing away from the centre ---------- */
-let G={lon:-20,lat:-28,vl:0,va:0,drag:false};
+/* ---------- D · Place: the earth, with its minerals growing out of it. At rest each place is a little cluster of circles;
+   point at a place and its circles open into crystals standing up out of the ground ---------- */
+let G={lon:-20,lat:-28,vl:0,va:0,drag:false},PL=null;
 const ll2v=(lat,lon)=>{const a=lat*Math.PI/180,o=lon*Math.PI/180;return[Math.cos(a)*Math.sin(o),-Math.sin(a),Math.cos(a)*Math.cos(o)]};
-let PL=null;
-function layPlace(){const by={};D.forEach(m=>m.loc.forEach(l=>{(by[l.n]=by[l.n]||{n:l.n,lat:l.lat,lon:l.lon,ms:[]}).ms.push(m)}));PL=Object.values(by)}
-function gview(v){const a=G.lon*Math.PI/180,b=G.lat*Math.PI/180;let x=v[0]*Math.cos(a)-v[2]*Math.sin(a),z=v[0]*Math.sin(a)+v[2]*Math.cos(a),y=v[1];const y2=y*Math.cos(b)-z*Math.sin(b),z2=y*Math.sin(b)+z*Math.cos(b);return[x,y2,z2]}
+function layPlace(){const by={};D.forEach(m=>m.loc.forEach(l=>{(by[l.n]=by[l.n]||{n:l.n,lat:l.lat,lon:l.lon,ms:[]}).ms.push({m,seed:Math.random()*6})}));PL=Object.values(by)}
+function gview(v){const a=G.lon*Math.PI/180,b=G.lat*Math.PI/180;let x=v[0]*Math.cos(a)-v[2]*Math.sin(a),z=v[0]*Math.sin(a)+v[2]*Math.cos(a),y=v[1];return[x,y*Math.cos(b)-z*Math.sin(b),y*Math.sin(b)+z*Math.cos(b)]}
 function drawPlace(t){const R=Math.min(W,H)*.32,cx0=W/2,cy0=H/2+14,k=ease((t-T0)/1400);
-  if(!G.drag){G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.vl=G.vl*.95+(hov?0:.05)*.05;G.va*=.92}
+  if(!G.drag){G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.vl=G.vl*.95+(hov||hovPlace?0:.05)*.05;G.va*=.92}
   g.strokeStyle=`rgba(${INK},.5)`;g.lineWidth=1;g.beginPath();g.arc(cx0,cy0,R,0,7);g.stroke();
-  // graticule, then the coastlines; only the near side
   const pr=v=>{const q=gview(v);return[cx0+q[0]*R,cy0+q[1]*R,q[2]]};
-  g.strokeStyle=`rgba(${INK},.08)`;for(let lo=-180;lo<180;lo+=30){g.beginPath();let pen=0;for(let la=-90;la<=90;la+=5){const p=pr(ll2v(la,lo));if(p[2]>0){pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);pen=1}else pen=0}g.stroke()}
-  for(let la=-60;la<=60;la+=30){g.beginPath();let pen=0;for(let lo=-180;lo<=180;lo+=5){const p=pr(ll2v(la,lo));if(p[2]>0){pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);pen=1}else pen=0}g.stroke()}
-  g.strokeStyle=`rgba(${INK},.42)`;LAND.forEach(ring=>{g.beginPath();let pen=0;ring.forEach(([lo,la])=>{const p=pr(ll2v(la,lo));if(p[2]>0){pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);pen=1}else pen=0});g.stroke()});
-  // the crystals: a sunflower of them at each place, standing up out of the surface
-  const s=R*.028*k,hits=[],list=[];
-  PL.forEach(pl=>{const u=ll2v(pl.lat,pl.lon),q=gview(u);if(q[2]<-.05)return;
+  const path=(pts)=>{g.beginPath();let pen=0;pts.forEach(p=>{if(p[2]>0){pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);pen=1}else pen=0});g.stroke()};
+  g.strokeStyle=`rgba(${INK},.07)`;for(let lo=-180;lo<180;lo+=30){const a=[];for(let la=-90;la<=90;la+=5)a.push(pr(ll2v(la,lo)));path(a)}
+  for(let la=-60;la<=60;la+=30){const a=[];for(let lo=-180;lo<=180;lo+=5)a.push(pr(ll2v(la,lo)));path(a)}
+  g.strokeStyle=`rgba(${INK},.38)`;LAND.forEach(ring=>path(ring.map(([lo,la])=>pr(ll2v(la,lo)))));
+  const hits=[],hm=hov&&hov.m;
+  PL.forEach(pl=>{const u=ll2v(pl.lat,pl.lon),q=gview(u);pl.sx=cx0+q[0]*R;pl.sy=cy0+q[1]*R;pl.sz=q[2];if(q[2]<.02)return;
     let e1=[u[2],0,-u[0]];const l1=Math.hypot(...e1)||1;e1=e1.map(x=>x/l1);const e2=[u[1]*e1[2]-u[2]*e1[1],u[2]*e1[0]-u[0]*e1[2],u[0]*e1[1]-u[1]*e1[0]];
-    const n=pl.ms.length,hp=hovPlace===pl;pl.sx=cx0+q[0]*R;pl.sy=cy0+q[1]*R;pl.sz=q[2];
-    pl.ms.forEach((m,i)=>{const r=Math.sqrt(i+.5)*.021,ang=i*2.39996,lift=1+.018+.05*(1-Math.sqrt(i/Math.max(1,n)))*(n>4?1:.3);
-      const base=[0,1,2].map(j=>u[j]*lift+(e1[j]*Math.cos(ang)+e2[j]*Math.sin(ang))*r);
-      list.push({pl,m,base,u,e1,e2,z:gview(base)[2],i})})});
-  list.sort((a,b)=>a.z-b.z);
-  list.forEach(o=>{const {m,base,u,e1,e2,pl}=o,h=m.habits[0],sz=s*(hov&&hov.m===m?1.6:1),spin=t/5000+o.i;
-    const P=h.V.map(v=>{const c=Math.cos(spin),sn=Math.sin(spin),x=v[0]*c+v[2]*sn,z=-v[0]*sn+v[2]*c,y=v[1];   // turn about its own c axis, then stand it on the ground
-      const w=[0,1,2].map(j=>base[j]*R+(e1[j]*x+(-y)*u[j]+e2[j]*z)*sz*(j===1?1:1)+u[j]*sz*.9);const q=gview(w);return[cx0+q[0],cy0+q[1],q[2]]});
-    const al=(hov?(hov.m===m?1:.3):hovPlace?(hovPlace===pl?1:.35):1)*Math.min(1,(o.z+.05)*6);
-    paint(g,P,h.F,m.colors[0].hex,al,.6);const c=gview(base.map(x=>x*R));hits.push([cx0+c[0],cy0+c[1],7,{m,col:m.colors[0].hex,pl}])});
-  if(hovPlace&&hovPlace.sz>0)lab(hovPlace.sx+18,hovPlace.sy-16,`${hovPlace.n}  ×${hovPlace.ms.length}`,INK,1,'14px');
-  if(hov&&hov.pl)lab(hov.pl.sx+18,hov.pl.sy-16,hov.pl.n,MUTE,1,'italic 12px');
+    const open=hovPlace===pl,n=pl.ms.length;pl.o=(pl.o||0)+((open?1:0)-(pl.o||0))*.12;const fade=Math.min(1,(q[2]-.02)*5)*k;
+    pl.ms.forEach((o,i)=>{const r=Math.sqrt(i+.5)*(.017+.03*pl.o),ang=i*2.39996,base=[0,1,2].map(j=>u[j]*(1+.01+.07*pl.o)+(e1[j]*Math.cos(ang)+e2[j]*Math.sin(ang))*r);
+      const b=gview(base),x=cx0+b[0]*R,y=cy0+b[1]*R,col=o.m.colors[0].hex,al=fade*(hm?(hm===o.m?1:.25):hovPlace&&!open?.35:1);
+      if(pl.o>.05||hm===o.m){   // open: the crystal stands on the ground, its c axis pointing away from the centre
+        const h=o.m.habits[0],sz=R*.03*Math.max(pl.o,hm===o.m?1:0),spin=t/5000+o.seed,c=Math.cos(spin),sn=Math.sin(spin);
+        const P=h.V.map(v=>{const X=v[0]*c+v[2]*sn,Z=-v[0]*sn+v[2]*c,Y=v[1];const w=[0,1,2].map(j=>base[j]*R+(e1[j]*X-Y*u[j]+e2[j]*Z)*sz+u[j]*sz);const p=gview(w);return[cx0+p[0],cy0+p[1],p[2]]});
+        g.globalAlpha=al;ink(g,h,P,1,.9);g.globalAlpha=1;dot(g,x,y,col,2,al)}
+      else{g.globalAlpha=al;g.strokeStyle=`rgba(${INK},.55)`;g.lineWidth=.9;g.beginPath();g.arc(x,y,3.6,0,7);g.stroke();g.globalAlpha=1;dot(g,x,y,col,1.5,al)}
+      hits.push([x,y,open?7:4,{m:o.m,col,pl}])})});
+  if(hovPlace&&hovPlace.sz>0)lab(hovPlace.sx+22,hovPlace.sy-44,`${hovPlace.n}  ×${hovPlace.ms.length}`,INK,1,'14px');
+  if(hov&&hov.pl&&hov.pl!==hovPlace)lab(hov.pl.sx+18,hov.pl.sy-16,hov.pl.n,MUTE,1,'italic 12px');
   lab(cx0,cy0+R+38,'drag to turn the earth',MUTE,.6,'italic 12px','center');HITS=hits}
 let hovPlace=null;
 
-/* ---------- C · Hardness: the minerals stand in columns over the Mohs scale; drag the tool and everything softer than it gets scratched ---------- */
+/* ---------- C · Hardness: one column of circles over each step of the Mohs scale; drag the tool and everything softer than it gets scratched ---------- */
 const MOHS=['talc','gypsum','calcite','fluorite','apatite','orthoclase','quartz','topaz','corundum','diamond'];
 const TOOLS=[[2.5,'fingernail'],[3.5,'copper coin'],[5.5,'steel knife · glass'],[6.5,'steel file'],[7,'quartz'],[8,'topaz'],[9,'corundum'],[10,'diamond']];
 let HC=null,toolH=5.5,toolT=5.5;
 function layHard(){const x0=110,x1=W-110,y0=H-150,cols={};D.forEach(m=>{const k=Math.round(m.h*2)/2;(cols[k]=cols[k]||[]).push(m)});
-  const mxN=Math.max(...Object.values(cols).map(c=>c.length)),step=Math.min(26,(y0-130)/mxN);
+  const mxN=Math.max(...Object.values(cols).map(c=>c.length)),step=Math.min(17,(y0-120)/mxN);
   HC={x0,x1,y0,step,X:h=>x0+(h-1)/9*(x1-x0),items:[]};
-  Object.entries(cols).forEach(([k,ms])=>ms.sort((a,b)=>a.n.localeCompare(b.n)).forEach((m,i)=>HC.items.push({m,h:+k,i,y:-200-Math.random()*600,v:0,sc:0})));placeTool()}
+  Object.entries(cols).forEach(([k,ms])=>ms.sort((a,b)=>a.colors[0].hex.localeCompare(b.colors[0].hex)).forEach((m,i)=>HC.items.push({m,h:+k,i,y:-40-i*30,v:0,sc:0,seed:Math.random()*6})));placeTool()}
 function placeTool(){const el=document.getElementById('tool');if(!HC)return;el.style.left=HC.X(toolH)+'px';el.style.top=(HC.y0+76)+'px';
   const nt=TOOLS.reduce((a,b)=>Math.abs(b[0]-toolH)<Math.abs(a[0]-toolH)?b:a);el.querySelector('b').textContent=nt[1];
-  const n=HC.items.filter(o=>o.m.h<toolH).length;el.querySelector('span').textContent=`${toolH.toFixed(1)} · scratches ${n} of ${D.length}`}
-function drawHard(t){const {x0,x1,y0,step,X}=HC;{const tx=X(toolH);g.strokeStyle=`rgba(${INK},.35)`;g.beginPath();g.moveTo(tx,y0);g.lineTo(tx,y0+76);g.stroke()}toolH+=(toolT-toolH)*.2;placeTool();
-  g.strokeStyle=`rgba(${INK},.6)`;g.lineWidth=1;g.beginPath();g.moveTo(x0-20,y0);g.lineTo(x1+20,y0);g.stroke();
-  for(let h=1;h<=10;h++){const x=X(h);g.beginPath();g.moveTo(x,y0);g.lineTo(x,y0+6);g.stroke();lab(x,y0+44+(h%2?0:0),String(h),INK,.9,'13px','center');lab(x,y0+60,MOHS[h-1],MUTE,.8,'italic 11px','center')}
-  // the scratch line runs up from the tool through every column
-  const tx=X(toolH);g.strokeStyle=`rgba(${INK},.35)`;g.setLineDash([2,4]);g.beginPath();g.moveTo(tx,y0);g.lineTo(tx,90);g.stroke();g.setLineDash([]);
-  const hits=[];
-  HC.items.forEach((o,k)=>{const ty=y0-12-o.i*step;o.v+=(ty-o.y)*.06;o.v*=.78;if(t-T0>k*12)o.y+=o.v;   // they drop in and settle like stones
-    const x=X(o.h)+(o.i%2?3:-3),soft=o.m.h<toolH-.01,hard=o.m.h>toolH+.01;o.sc+=((soft?1:0)-o.sc)*.12;
-    const al=hov?(hov.m===o.m?1:.3):1-.35*o.sc,s=Math.min(11,step*.48)*(hov&&hov.m===o.m?1.5:1);
-    glyph(g,o.m,0,x,o.y,s,o.m.colors[0].hex,al,-.35,t/4000+k*.7);
-    if(o.sc>.02){g.strokeStyle=`rgba(${INK},${.8*o.sc*al})`;g.lineWidth=1;g.beginPath();g.moveTo(x-s*1.2,o.y+s*.5);g.lineTo(x-s*1.2+s*2.4*o.sc,o.y+s*.5-s*1.0*o.sc);g.stroke()}   // a scratch drawn across it
-    if(hard&&Math.abs(o.m.h-toolH)<1.6){const tw=(Math.sin(t/300+k)+1)/2;g.strokeStyle=`rgba(${INK},${.5*tw})`;g.beginPath();g.moveTo(x+s,o.y-s-3);g.lineTo(x+s,o.y-s+3);g.moveTo(x+s-3,o.y-s);g.lineTo(x+s+3,o.y-s);g.stroke()}   // the ones just harder than the tool glint
-    hits.push([x,o.y,s+2,{m:o.m,col:o.m.colors[0].hex}])});
+  el.querySelector('span').textContent=`${toolH.toFixed(1)} · scratches ${HC.items.filter(o=>o.m.h<toolH).length} of ${D.length}`}
+function drawHard(t){const {x0,x1,y0,step,X}=HC;toolH+=(toolT-toolH)*.2;placeTool();const tx=X(toolH);
+  g.strokeStyle=`rgba(${INK},.35)`;g.lineWidth=1;g.beginPath();g.moveTo(tx,y0);g.lineTo(tx,y0+76);g.stroke();
+  g.strokeStyle=`rgba(${INK},.6)`;g.beginPath();g.moveTo(x0-20,y0);g.lineTo(x1+20,y0);g.stroke();
+  for(let h=1;h<=10;h++){const x=X(h);g.beginPath();g.moveTo(x,y0);g.lineTo(x,y0+6);g.stroke();lab(x,y0+44,String(h),INK,.9,'13px','center');lab(x,y0+60,MOHS[h-1],MUTE,.8,'italic 11px','center')}
+  g.strokeStyle=`rgba(${INK},.3)`;g.setLineDash([2,4]);g.beginPath();g.moveTo(tx,y0);g.lineTo(tx,90);g.stroke();g.setLineDash([]);
+  const hits=[],hm=hov&&hov.m;
+  HC.items.forEach((o,k)=>{const ty=y0-14-o.i*step;o.v+=(ty-o.y)*.05;o.v*=.8;o.y+=o.v;   // they drop into their column and settle
+    const x=X(o.h),soft=o.m.h<toolH-.01,hard=o.m.h>toolH+.01;o.sc+=((soft?1:0)-o.sc)*.12;const al=hm?(hm===o.m?1:.3):1-.3*o.sc;
+    mark(o,x,o.y,o.m.colors[0].hex,al,hov===o,t,22);
+    if(o.sc>.02&&o.k<.5){g.strokeStyle=`rgba(${INK},${.75*o.sc*al})`;g.lineWidth=1;g.beginPath();g.moveTo(x-8,o.y+4);g.lineTo(x-8+16*o.sc,o.y+4-8*o.sc);g.stroke()}   // a scratch across the circle
+    if(hard&&o.m.h-toolH<1.6&&o.k<.5){const tw=(Math.sin(t/300+k)+1)/2;g.strokeStyle=`rgba(${INK},${.45*tw})`;g.beginPath();g.moveTo(x+9,o.y-11);g.lineTo(x+9,o.y-5);g.moveTo(x+6,o.y-8);g.lineTo(x+12,o.y-8);g.stroke()}   // just harder than the tool: a glint
+    hits.push([x,o.y,7,o])});
   HITS=hits}
 const toolEl=document.getElementById('tool');let tDrag=false;
 toolEl.addEventListener('pointerdown',e=>{tDrag=true;toolEl.setPointerCapture(e.pointerId);toolEl.style.cursor='grabbing'});
 toolEl.addEventListener('pointermove',e=>{if(!tDrag)return;toolT=Math.max(1,Math.min(10,1+(e.clientX-HC.x0)/(HC.x1-HC.x0)*9))});
-toolEl.addEventListener('pointerup',()=>{tDrag=false;toolEl.style.cursor='grab';const nt=TOOLS.reduce((a,b)=>Math.abs(b[0]-toolT)<Math.abs(a[0]-toolT)?b:a);if(Math.abs(nt[0]-toolT)<.35)toolT=nt[0]});   // lets go onto the nearest everyday tool
+toolEl.addEventListener('pointerup',()=>{tDrag=false;toolEl.style.cursor='grab';const nt=TOOLS.reduce((a,b)=>Math.abs(b[0]-toolT)<Math.abs(a[0]-toolT)?b:a);if(Math.abs(nt[0]-toolT)<.35)toolT=nt[0]});
 
 /* ---------- shared ---------- */
 let HITS=[];
 function lab(x,y,s,c,a,f,al){g.globalAlpha=a;g.fillStyle=`rgb(${c})`;g.font=`${f||'12px'} ${FONT}`;g.textAlign=al||'left';g.fillText(s,x,y);g.textAlign='left';g.globalAlpha=1}
 function lay(){if(!D.length)return;layColour();layPlace();layHard()}
 function setView(v){view=v;T0=performance.now();hov=null;pin=null;hideCard();document.querySelectorAll('#top button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  toolEl.style.display=v==='hard'?'block':'none';if(v==='hard')layHard();
+  toolEl.style.display=v==='hard'?'block':'none';if(v==='hard')layHard();if(v==='colour')layColour();
   document.getElementById('sub').textContent={colour:`${D.length} minerals, by the colour they show`,place:`${D.length} minerals, where they are found`,hard:`${D.length} minerals, from soft to hard`}[v];
   try{history.replaceState(null,'','#'+v)}catch(e){}}
 document.querySelectorAll('#top button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 const tip=document.getElementById('tip');
 addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY;
   if(G.drag){G.vl=(e.clientX-G.x)*.25;G.va=(e.clientY-G.y)*.2;G.lon+=G.vl;G.lat=Math.max(-60,Math.min(60,G.lat+G.va));G.x=e.clientX;G.y=e.clientY;return}
-  let best=null,bd=1e9;HITS.forEach(h=>{const d=Math.hypot(h[0]-mx,h[1]-my);if(d<h[2]+3&&d<bd){bd=d;best=h[3]}});hov=best;
-  hovRay=!best?rayAt(mx,my):null;
-  hovPlace=null;if(view==='place'&&!best&&PL){let b2=null,d2=22;PL.forEach(p=>{if(p.sz>0){const d=Math.hypot(p.sx-mx,p.sy-my);if(d<d2){d2=d;b2=p}}});hovPlace=b2}
-  if(best){showCard(best.m,best.col);tip.style.opacity=1;tip.style.left=(mx+14)+'px';tip.style.top=(my-24)+'px';tip.innerHTML=`<b>${best.m.n}</b>  <span>${best.cn?best.cn.toLowerCase():'Mohs '+best.m.h}</span>`}
+  let best=null,bd=1e9;HITS.forEach(h=>{const d=Math.hypot(h[0]-mx,h[1]-my);if(d<h[2]+3&&d<bd){bd=d;best=h[3]}});
+  hovPlace=null;if(view==='place'&&PL){let b2=null,d2=26;PL.forEach(p=>{if(p.sz>.02){const d=Math.hypot(p.sx-mx,p.sy-my);if(d<d2+(p.o||0)*30){d2=d;b2=p}}});hovPlace=b2}
+  hov=best;
+  if(best){showCard(best.m);tip.style.opacity=1;tip.style.left=(mx+16)+'px';tip.style.top=(my-26)+'px';tip.innerHTML=`<b>${best.m.n}</b>  <span>${best.cn?best.cn.toLowerCase():'Mohs '+best.m.h}</span>`}
   else{tip.style.opacity=0;if(!pin)hideCard()}
   cv.style.cursor=best?'pointer':view==='place'?'grab':'default'});
-cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if(pin)showCard(hov.m,hov.col);return}pin=null;hideCard();if(view==='place'){G.drag=true;G.x=e.clientX;G.y=e.clientY;cv.setPointerCapture(e.pointerId)}});
+cv.addEventListener('pointerdown',e=>{if(hov){pin=pin&&pin.m===hov.m?null:hov;if(pin)showCard(hov.m);return}pin=null;hideCard();if(view==='place'){G.drag=true;G.x=e.clientX;G.y=e.clientY;cv.setPointerCapture(e.pointerId)}});
 addEventListener('pointerup',()=>{G.drag=false});
 card.addEventListener('pointerleave',()=>{if(!pin)hideCard()});
 function loop(t){g.clearRect(0,0,W,H);if(D.length){if(view==='colour')drawColour(t);else if(view==='place')drawPlace(t);else drawHard(t);drawCard(t)}requestAnimationFrame(loop)}
