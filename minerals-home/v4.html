@@ -81,7 +81,7 @@ function layColour(){const cx0=W/2,cy0=H/2+16,R=Math.min(W,H)*.33,it=[],by={};
   Object.entries(by).forEach(([hex,list])=>{const q=hsv(hex);let bx,byy;
     if(q.s<.14){bx=cx0;byy=cy0+(.5-q.v)*R*.62}   // colourless at the top of the middle, black at the bottom
     else{const a=(q.h-90)*Math.PI/180,r=R*(.6+.4*Math.min(1,q.s*q.v*1.3));bx=cx0+Math.cos(a)*r;byy=cy0+Math.sin(a)*r}
-    list.forEach((o,i)=>{const rr=Math.sqrt(i)*8.2,aa=i*2.39996;o.tx=bx+Math.cos(aa)*rr;o.ty=byy+Math.sin(aa)*rr;it.push(o)})});   // each colour is a small sunflower of circles
+    list.forEach((o,i)=>{o.ach=q.s<.14;const rr=Math.sqrt(i)*8.2,aa=i*2.39996;o.tx=bx+Math.cos(aa)*rr;o.ty=byy+Math.sin(aa)*rr;it.push(o)})});   // each colour is a small sunflower of circles
   for(let n=0;n<60;n++)for(let i=0;i<it.length;i++)for(let j=i+1;j<it.length;j++){const a=it[i],b=it[j],dx=b.tx-a.tx,dy=b.ty-a.ty,d=Math.hypot(dx,dy);
     if(d<14.5&&d>0){const p=(14.5-d)/2;a.tx-=dx/d*p;a.ty-=dy/d*p;b.tx+=dx/d*p;b.ty+=dy/d*p}}
   it.forEach(o=>{o.x=cx0;o.y=cy0});A={cx0,cy0,R,it}}
@@ -94,7 +94,7 @@ function drawColour(t){const {cx0,cy0,R,it}=A,k=ease((t-T0)/1300);
   {const e=ease((t-T0-500)/1400),a0=-Math.PI/2,RR=R*1.12;
    // one continuous line: a conic gradient round the circle, faint; the lit stretch is the same line drawn again, saturated
    const cg=al=>{const c=g.createConicGradient(a0,cx0,cy0);for(let d=0;d<=360;d+=30)c.addColorStop(d/360,`hsla(${d%360},${al>.5?65:45}%,${al>.5?50:56}%,${al})`);return c};
-   g.lineWidth=2;g.strokeStyle=cg(.32);g.beginPath();g.arc(cx0,cy0,RR,a0,a0+Math.PI*2*e);g.stroke();
+   g.lineWidth=1.1;   // nothing at rest; only the stretch you point at, or the colours of the mineral you hold, is drawn
    const span=[];lit.forEach(h=>span.push([h-9,h+9]));if(A.phS!=null)span.push([A.phS-12,A.phS+12]);
    g.strokeStyle=cg(.95);span.forEach(([d1,d2])=>{g.beginPath();g.arc(cx0,cy0,RR,(d1-90)*Math.PI/180,(d2-90)*Math.PI/180);g.stroke()});g.lineWidth=1;
    if(hm0)A.it.filter(o=>o.m===hm0&&!o.ach).forEach(o=>{const a=(hsv(o.col).h-90)*Math.PI/180;g.strokeStyle=`rgba(${INK},.35)`;g.setLineDash([1,3]);g.beginPath();g.moveTo(o.x,o.y);g.lineTo(cx0+Math.cos(a)*R*1.1,cy0+Math.sin(a)*R*1.1);g.stroke();g.setLineDash([])});   // each of its colours reaches out to its place on the band
