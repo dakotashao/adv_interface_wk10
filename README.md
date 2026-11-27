@@ -15,3 +15,7 @@ Each set lives in its own folder with a self-contained index.html. Spec is insid
 ## Final vision · foam
 
 The direction for the final: one design system built from a single shape, a bubble. Object, brand sheet, components, toggles and the two navigation sets in one page. [Open](https://dakotashao.github.io/adv_interface_wk10/foam-vision/)
+
+## Final · Minerals (work in progress)
+
+The Axis Nav system with 92 minerals: L0 where each was first found, L1–L2 the cube by kind and the year it was named, L3 one specimen with its own a·b·c crystal axes and hardness, L4 the cabinet of what you collected. [Open](https://dakotashao.github.io/adv_interface_wk10/minerals-app/) · [Level breakdown](https://dakotashao.github.io/adv_interface_wk10/minerals-structure/)
