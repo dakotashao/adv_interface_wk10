@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Paper nav — in the world</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ebe9e3;--ink:#1c1b18;--mute:#767168;--faint:#b9b4a9}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);overflow:hidden;font:400 13px/1.2 "Newsreader",serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+#world{position:fixed;inset:0;width:100%;height:100%;border:0}
+svg#geo{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+svg#geo text{font-family:"Newsreader",serif;font-size:13px;fill:var(--mute);font-style:italic}
+svg#geo text.on{fill:var(--ink);font-style:normal}
+svg#geo text.sm{font-size:10px;fill:var(--faint)}
+svg#geo .ln{stroke:var(--ink);fill:none;stroke-width:1}
+.hit{position:fixed;cursor:pointer}
+#pick{position:fixed;right:22px;top:62px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;font-size:12px}
+#pick .g{display:flex;gap:12px;align-items:baseline}
+#pick .g b{font-weight:400;color:var(--faint);font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-right:2px}
+#pick button{all:unset;cursor:pointer;color:var(--mute);font-style:italic}
+#pick button.on{color:var(--ink);font-style:normal}
+#pick .sub{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:8px;border-top:1px solid rgba(28,27,24,.12)}
+</style></head><body>
+<iframe id="world" src="world.html?bare&v=1795762561#paper"></iframe>
+<svg id="geo"></svg>
+<div class="hit" id="hitTop"></div><div class="hit" id="hitRail"></div>
+
+<script>
+const HEMI=[{n:'Eastern',c:90,q:[0,1]},{n:'Pacific',c:180,q:[1,2]},{n:'Western',c:-90,q:[2,3]},{n:'Atlantic',c:0,q:[3,0]}];
+const CENT=['1 talc','2 gypsum','3 calcite','4 fluorite','5 apatite','6 orthoclase','7 quartz','8 topaz','9 corundum','10 diamond'];
+const ERA={'1700s':CENT,
+  'xviii':['i','ii','iii','iv','v','vi','vii','viii','ix','x'],
+  '1700':['1900','1800','1700','1600','1500','1400','1300','1000','500','1','−500','−1000'],
+  '18th':['20th','19th','18th','17th','16th','15th','14th','11–13th','6–10th','1–5th','5th bce','older']};
+const quartOf=l=>{l=((l%360)+360)%360;return l<90?0:l<180?1:l<270?2:3};
+let P=[];fetch('objs.json').then(r=>r.json()).then(d=>P=d);
+const cnt=(h,c)=>P.filter(p=>HEMI[h].q.includes(quartOf(p.lon))&&(c==null||p.cen===c)).length;   // c omitted: the whole hemisphere
+
+// state mirrored from the world
+let hemi=0,cen=-1,level=0,hv=null,hvH=null,lastAct=0;
+const world=document.getElementById('world');const send=m=>world.contentWindow.postMessage(m,'*');
+addEventListener('message',e=>{const d=e.data||{};if(d.t==='state'){if(d.hemi!==hemi||d.cen!==cen)lastAct=performance.now();hemi=d.hemi;cen=d.cen;level=d.level}});
+
+// options
+const opt={nav:'construct',era:'1700s',lines:'full',answer:'rings',motion:'compass',touch:'crosshair',bar:'plain',mark:'dot'};   // the chosen set
+const GROUPS=[['nav',['ruler','index','construct']]];
+const SUB=[['era',['1700s','xviii','1700','18th']],['lines',['hover','full','point']],['answer',['rings','end','outline']],['motion',['compass','glide','measure']],['touch',['pencil','crosshair','none']],['bar',['plain','folio','plate']]];
+function drawPick(){const row=([k,vs])=>`<div class="g"><b>${k}</b>${vs.map(v=>`<button data-k="${k}" data-v="${v}" class="${opt[k]===v?'on':''}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`;
+  let h=GROUPS.map(row).join('');if(opt.nav==='construct')h+=`<div class="sub">${SUB.map(row).join('')}</div>`;else h+=`<div class="sub">${row(SUB[2])}</div>`;
+  const el=document.getElementById('pick');el.innerHTML=h;el.querySelectorAll('button').forEach(b=>b.onclick=()=>{opt[b.dataset.k]=b.dataset.v;G.init=0;lastAct=performance.now();drawPick()})}
+/* the comparison panel is retired: drawPick() is no longer called */
+
+// geometry
+const G={init:0};const sp=(a,b,k)=>a+(b-a)*k;const E_=(t,a,i)=>`<${t} ${Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ')}>${i||''}</${t}>`;
+const W=()=>innerWidth,H=()=>innerHeight;
+const RY=i=>{const top=120,bot=H()-120;return top+(bot-top)*(i+.5)/CENT.length};
+const TX=l=>W()/2-230+((l+135+360)%360)/360*460;   // hemisphere centres evenly along the top
+const lab=i=>ERA[opt.era][i];
+let HP=[];
+function hits(top,rail){const a=document.getElementById('hitTop'),b=document.getElementById('hitRail');Object.assign(a.style,top);Object.assign(b.style,rail)}
+
+function mark(x,y,k,on){const m=opt.mark,op=on?1:.6;
+  if(m==='dot')return E_('circle',{cx:x,cy:y,r:k*.6+.6,fill:'var(--ink)','fill-opacity':op});
+  if(m==='plus')return E_('path',{d:`M${x-k} ${y}H${x+k}M${x} ${y-k}V${y+k}`,class:'ln','stroke-opacity':op});
+  if(m==='tick')return E_('path',{d:`M${x} ${y}H${x+k*2.4}`,class:'ln','stroke-opacity':op});
+  return E_('circle',{cx:x,cy:y,r:k*.8+.8,class:'ln','stroke-opacity':op})}
+function axisV(x,y1,y2){const a=opt.axis;if(a==='none')return'';if(a==='double')return E_('line',{x1:x-2,y1,x2:x-2,y2,class:'ln','stroke-opacity':.2})+E_('line',{x1:x+2,y1,x2:x+2,y2,class:'ln','stroke-opacity':.2});
+  return E_('line',{x1:x,y1,x2:x,y2,class:'ln','stroke-opacity':.25,...(a==='dashed'?{'stroke-dasharray':'1 4'}:{})})}
+function axisH(y,x1,x2){const a=opt.axis;if(a==='none')return'';if(a==='double')return E_('line',{x1,y1:y-2,x2,y2:y-2,class:'ln','stroke-opacity':.2})+E_('line',{x1,y1:y+2,x2,y2:y+2,class:'ln','stroke-opacity':.2});
+  return E_('line',{x1,y1:y,x2,y2:y,class:'ln','stroke-opacity':.25,...(a==='dashed'?{'stroke-dasharray':'1 4'}:{})})}
+
+
+
+// ---- focus: the chosen item is sharp, things go softer the farther they are from it; pointing at one brings it into focus
+const FOCUS=d=>Math.max(0,Math.min(.55,(Math.abs(d)-.15)*.2));
+const HATCH='<pattern id="hatch" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="#1c1b18" stroke-width=".7"/></pattern>';
+const FZ={},FR={};const DEFS='<defs>'+HATCH+[1,2,3,4,5,6,7,8].map(k=>`<filter id="b${k}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="${(k*.2).toFixed(1)}"/></filter>`).join('')+'</defs>';
+function fz(key,amt){FZ[key]=sp(FZ[key]??amt,amt,.12);const px=FZ[key]*1.1,k=Math.round(px/.2);return k<1?{}:{filter:`url(#b${Math.min(8,k)})`}}
+const fzR=i=>fz('r'+i,i===hv||(LH&&LH.c===i)?0:cen<0?FOCUS(2):FOCUS((i-cen)*1.3));
+const fzT=i=>{const d=Math.min(Math.abs(i-hemi),4-Math.abs(i-hemi));return fz('t'+i,i===hvH?0:FOCUS(d*2.2))};
+
+// ---- what is inside a century, before you go there: the open rail carries a colour strip, pointing shows its representative piece
+function wP(){try{return world.contentWindow.__P()||[]}catch(_){return[]}}
+function inH(p,h){return HEMI[h].q.includes(quartOf(p.lon))}
+function strip(i,x,y,ro){const A=wP().filter(p=>p.cen===i&&inH(p,hemi));if(!A.length)return'';const lum=c=>{const m=(c||'').match(/\d+/g);return m?+m[0]*.3+ +m[1]*.59+ +m[2]*.11:128};
+  const seg=A.slice().sort((a,b)=>lum(a.col)-lum(b.col)),w=56/seg.length;
+  return seg.map((p,k)=>E_('rect',{x:x+k*w,y:y-2,width:w+.3,height:3,fill:p.col||'#999',opacity:.85*cl((ro-.5)*2)*(hv===i?.3:1)})).join('')}
+let PV={i:null,t0:0};
+function preview(){if(hv===null){PV.i=null;return''}const A=wP().filter(p=>p.cen===hv&&inH(p,hemi));if(!A.length)return'';
+  let rep;try{rep=world.contentWindow.repOf(A)}catch(_){rep=A[0]}if(!rep)return'';if(PV.i!==hv){PV.i=hv;PV.t0=performance.now()}
+  const t=cl((performance.now()-PV.t0)/450),e=eo(t),ar=(rep.ar||1),hh=58,ww=hh*ar,x=(prog('r')>.5?250:150),y=RY(hv)-hh/2;
+  // the picture sits beside the row with the same ring the world uses, drawn once around it
+  const cx=x+ww/2,cy=RY(hv),R=Math.hypot(ww,hh)/2+8;
+  return E_('image',{href:'world.html'.replace('world.html','')+rep.img,x,y,width:ww,height:hh,opacity:e,preserveAspectRatio:'xMidYMid meet'})
+    +(e>.995?E_('circle',{cx,cy,r:R,class:'ln','stroke-opacity':.4}):E_('path',{d:arcPath(cx,cy,R,Math.PI,e*Math.PI*2),class:'ln','stroke-opacity':.4}))
+    +E_('text',{x:cx,y:cy+R+16,'text-anchor':'middle',class:'sm',style:'fill:var(--mute)',opacity:e},(rep.t||'').replace(/<[^>]+>/g,'').split(/[,(]/)[0].slice(0,28))}
+// ---- moving through time without clicking row by row: wheel over the rail, or drag along it; empty centuries are stepped over
+const full=i=>cnt(hemi,i)>0;
+function nearestFull(i,dir){if(full(i))return i;for(let d=1;d<CENT.length;d++){const a=i+d*(dir||1),b=i-d*(dir||1);if(a>=0&&a<CENT.length&&full(a))return a;if(b>=0&&b<CENT.length&&full(b))return b}return i}
+let lastStep=0;function goCen(i){if(i===cen)return;lastAct=performance.now();cen=i;send({t:'cen',c:i})}
+
+// ---- linked: pointing at a piece in the world lights up its century on the rail and its longitude on the top bar
+let LH=null;function linked(){try{const p=world.contentWindow.__H&&world.contentWindow.__H();LH=p&&hv===null&&hvH===null?{c:p.cen,lon:p.lon}:null}catch(_){LH=null}}
+
+// ---- what: the four material quadrants live at the foot of the rail, only inside the cube.
+// each is the same small circle, cut by a cross, with its own quarter hatched (top = rigid, left = transformed)
+const QN=['Symmetric · Silicate','Symmetric · Other','Asymmetric · Silicate','Asymmetric · Other'];
+const QY=k=>H()-200+k*38;let hvQ=null,isoQ=null,wLevel=0;
+function qGlyph(x,y,k,on){const r=6,sx=k%2?1:-1,sy=k<2?-1:1;
+  return E_('path',{d:`M${x} ${y}L${x+sx*r} ${y}A${r} ${r} 0 0 ${sx*sy>0?1:0} ${x} ${y+sy*r}Z`,fill:'url(#hatch)'})
+    +E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':on?.95:.6})+E_('path',{d:`M${x-r} ${y}H${x+r}M${x} ${y-r}V${y+r}`,class:'ln','stroke-opacity':.35,'stroke-width':.6})}
+function matBar(){let st;try{st=world.contentWindow.__Q()}catch(_){return''}isoQ=st[1];wLevel=st[2];if(!wLevel)return'';
+  const x0=RXB(),pr=prog('r'),A=wP().filter(p=>inH(p,hemi)&&p.cen===cen);let o='';
+  QN.forEach((nm,k)=>{const y=QY(k),on=isoQ===k,h=hvQ===k,n=A.filter(p=>p.mat===k).length,op=isoQ!=null&&!on?.35:1;
+    o+=E_('g',{opacity:op},qGlyph(x0,y,k,on||h));
+    if(pr>.5||h||on){let mats='';try{mats=world.contentWindow.matsNow(k)||''}catch(_){}
+      o+=E_('text',{x:x0+16,y:y-2,class:on?'on':'',opacity:h||on?1:.75},nm)+E_('text',{x:x0+16,y:y+12,class:'sm'},n?(mats&&mats!=='—'?mats+'  ':'')+'▯×'+n:'—')}});
+  return o+ringMotion(MS.mat,isoQ,k=>[x0,QY(k)],'v')+touch(hvQ!==null&&hvQ!==isoQ?[x0,QY(hvQ)]:null,'q')}
+function pickQ(e){if(!wLevel)return null;let b=null,bd=1e9;QN.forEach((_,k)=>{const d=Math.abs(QY(k)-e.clientY);if(d<bd){bd=d;b=k}});return bd<16&&e.clientX<RXB()+200?b:null}
+// ---- bar motion: how the chosen ring gets from the old item to the new one
+const MS={mat:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},top:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]},rail:{i:undefined,prev:null,t0:0,x:0,y:0,vx:0,vy:0,trail:[]}};
+let pressT=-1e9;addEventListener('mousedown',()=>pressT=performance.now());
+const cl=v=>Math.max(0,Math.min(1,v)),eo=t=>1-Math.pow(1-t,3);
+function arcPath(cx,cy,r,a0,len){if(len<=0.001||r<=0)return'';len=Math.min(len,Math.PI*2-.0001);const x1=cx+r*Math.cos(a0),y1=cy+r*Math.sin(a0),x2=cx+r*Math.cos(a0+len),y2=cy+r*Math.sin(a0+len);
+  return `M${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 ${len>Math.PI?1:0} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`}
+function ringMotion(st,i,at,dir){const now=performance.now();
+  if(st.i===undefined){st.i=i;st.t0=now-2000;if(i!=null){[st.x,st.y]=at(i)}}
+  if(i!==st.i){st.prev=st.i;st.i=i;st.t0=now}
+  if(i==null&&st.prev==null)return'';
+  const t=(now-st.t0)/1000,P=i!=null?at(i):null,O=st.prev!=null?at(st.prev):null;let o='';
+  const pr=1-.35*Math.sin(Math.PI*cl((now-pressT)/180));   // a press dents the ring and lets it go
+  const R=10*pr,ring=(x,y,r,op)=>E_('circle',{cx:x,cy:y,r:Math.max(0,r),class:'ln','stroke-opacity':op});
+  if(opt.motion==='compass'){   // the old ring is wound back up, the new one is drawn out like a compass, starting on the side it came from
+    if(O&&t<.3)o+=E_('path',{d:arcPath(O[0],O[1],10,-Math.PI/2,(1-eo(t/.3))*Math.PI*2),class:'ln','stroke-opacity':.5});
+    if(P){const e=O?eo(cl((t-.12)/.5)):1,a0=O?Math.atan2(O[1]-P[1],O[0]-P[0]):-Math.PI/2;o+=e>=.995?ring(P[0],P[1],R,.5):E_('path',{d:arcPath(P[0],P[1],R,a0,e*Math.PI*2),class:'ln','stroke-opacity':.5})}
+    if(P){st.x=P[0];st.y=P[1]}}
+  if(opt.motion==='glide'){   // the ring travels along the bar with a little give, leaving a dotted wake
+    if(P){st.vx+=(P[0]-st.x)*.11;st.vy+=(P[1]-st.y)*.11;st.vx*=.74;st.vy*=.74;st.x+=st.vx;st.y+=st.vy;
+      if(Math.hypot(st.vx,st.vy)>.6)st.trail.push([st.x,st.y,now]);st.trail=st.trail.filter(q=>now-q[2]<420);
+      st.trail.forEach((q,k)=>{if(k%3)return;const f=1-(now-q[2])/420;o+=E_('circle',{cx:q[0],cy:q[1],r:1.3,fill:'var(--ink)','fill-opacity':.45*f})});
+      o+=ring(st.x,st.y,R,.5)}}
+  if(opt.motion==='measure'){   // a compass span opens from the old item to the new one, then the ring is set down
+    if(O&&P&&t<1){const mx=(O[0]+P[0])/2,my=(O[1]+P[1])/2,r=Math.hypot(P[0]-O[0],P[1]-O[1])/2;
+      const e=eo(cl(t/.4)),fade=1-cl((t-.55)/.4);if(r>1){const base=Math.atan2(O[1]-my,O[0]-mx),sweep=(dir==='h'?-1:1)*(P[0]>O[0]||P[1]>O[1]?1:-1);
+        const a0=sweep>0?base:base-e*Math.PI;o+=E_('path',{d:arcPath(mx,my,r,a0,e*Math.PI),class:'ln','stroke-opacity':.35*fade,'stroke-dasharray':'2 3'});
+        o+=E_('circle',{cx:O[0],cy:O[1],r:1.8,fill:'var(--ink)','fill-opacity':.5*fade})}
+      if(O&&t<.3)o+=ring(O[0],O[1],10*(1-eo(t/.3)),.5)}
+    if(P){const e=O?eo(cl((t-.35)/.3)):1;o+=ring(P[0],P[1],R*e,.5);st.x=P[0];st.y=P[1]}}
+  return o}
+// ---- touch: what an item does while you point at it
+function touch(p,k){if(!p||opt.touch==='none')return'';const now=performance.now()/1000,[x,y]=p;
+  if(opt.touch==='pencil'){const a=now*2.4;return E_('path',{d:arcPath(x,y,10,a,Math.PI*.55),class:'ln','stroke-opacity':.45})}   // a pencil hovering, not yet drawing
+  return [0,1,2,3].map(j=>{const a=j*Math.PI/2+Math.PI/4*(1-cl((performance.now()-(TS[k]||0))/250));const c=Math.cos(a),s=Math.sin(a);
+    return E_('line',{x1:x+c*7,y1:y+s*7,x2:x+c*12,y2:y+s*12,class:'ln','stroke-opacity':.5})}).join('')}   // crosshair turns into place
+const TS={};let _lt=null,_lr=null;setInterval(()=>{if(hvH!==_lt){_lt=hvH;TS.t=performance.now()}if(hv!==_lr){_lr=hv;TS.r=performance.now()}},16);
+// ---- Construct: the two bars draw lines to where those pieces really are in the world
+let POS=[];addEventListener('message',e=>{if(e.data&&e.data.t==='pos')POS=e.data.v});
+function pos(){try{const WP=world.contentWindow.__P();if(WP&&WP.length)return WP.map(p=>[p.sx||0,p.sy||0,p.sa||0])}catch(_){}return POS}
+function cluster(h,c){const Q=pos();if(!Q.length||!P.length)return null;const pts=[];
+  P.forEach((p,i)=>{if(!HEMI[h].q.includes(quartOf(p.lon)))return;if(c!=null&&p.cen!==c)return;const q=Q[i];if(q&&q[2]>.04)pts.push(q)});
+  if(!pts.length)return null;const cx=pts.reduce((s,q)=>s+q[0],0)/pts.length,cy=pts.reduce((s,q)=>s+q[1],0)/pts.length;
+  const r=Math.min(320,Math.max(16,...pts.map(q=>Math.hypot(q[0]-cx,q[1]-cy)+14)));return{cx,cy,r,pts}}
+function hull(pts){const P2=pts.map(q=>[q[0],q[1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(P2.length<3)return P2;const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[],up=[];for(const p of P2){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}for(const p of P2.slice().reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+  return lo.slice(0,-1).concat(up.slice(0,-1))}
+const nearest=(x,y,H2)=>H2.reduce((b,q)=>Math.hypot(q[0]-x,q[1]-y)<Math.hypot(b[0]-x,b[1]-y)?q:b,H2[0]);
+// a constellation: the pieces that answer the question, joined by their outline; one piece alone gets a small ring
+function shape(K,op,dash,ends){const d=dash?{'stroke-dasharray':dash}:{};let o='';
+  // rings: a small circle on each piece · end: only the piece each line lands on · outline: the constellation
+  if(opt.answer==='rings'){K.pts.forEach(q=>o+=E_('circle',{cx:q[0],cy:q[1],r:9,class:'ln','stroke-opacity':op*1.2,...d}));return o}
+  if(opt.answer==='end'){(ends||[]).forEach(q=>o+=E_('circle',{cx:q[0],cy:q[1],r:9,class:'ln','stroke-opacity':op*1.4,...d})+E_('circle',{cx:q[0],cy:q[1],r:2,fill:'var(--ink)','fill-opacity':op*2}));return o}
+  const H2=hull(K.pts);
+  if(H2.length===1)o+=E_('circle',{cx:H2[0][0],cy:H2[0][1],r:9,class:'ln','stroke-opacity':op,...d});
+  else o+=E_('path',{d:'M'+H2.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join('L')+(H2.length>2?'Z':''),class:'ln','stroke-opacity':op,...d});
+  K.pts.forEach(q=>o+=E_('circle',{cx:q[0],cy:q[1],r:2.2,fill:'var(--ink)','fill-opacity':op*1.6}));return o}
+function toRing(ax,ay,c){const dx=c.cx-ax,dy=c.cy-ay,L=Math.hypot(dx,dy)||1;return[c.cx-dx/L*c.r,c.cy-dy/L*c.r]}
+// bar shapes: arc bows both bars like a protractor; the others stay straight
+const BOW=()=>false;
+const RX=i=>{const x0=RXB();if(!BOW())return x0;const m=(RY(0)+RY(CENT.length-1))/2,h=(RY(CENT.length-1)-RY(0))/2+24,u=(RY(i)-m)/h;return x0+28*(1-u*u)};
+const TYx=x=>{const y0=40;if(!BOW())return y0;const v=(x-W()/2)/260;return y0+14*(1-v*v)};
+// ---- collapsed / expanded: collapsed is only the marks; opening draws the axis out from its end circle across the whole page
+const EXP={r:{on:0,t0:-1e9},t:{on:0,t0:-1e9}};
+const prog=k=>{const e=EXP[k],t=performance.now()-e.t0;return e.on?eo(cl(t/750)):1-eo(cl(t/450))};
+const RXB=()=>36;
+const TGR=()=>[RXB(),RY(0)-40],TGT=()=>[W()/2-290,40];   // each bar keeps its own switch at its start   // one switch where the two axes cross: the origin
+function toggleMark(x,y,on,hot){return E_('circle',{cx:x,cy:y,r:hot?4.5:3.5,class:'ln','stroke-opacity':hot?.9:.6})+(on?E_('circle',{cx:x,cy:y,r:1.4,fill:'var(--ink)'}):'')}
+let hotT=null;
+function barTop_OLD(){const y0=40,L=W()/2-250,Rr=W()/2+250,b=opt.bar;let o='';
+  if(b==='plain')return axisH(y0,L,Rr);
+  if(b==='arc'){let d='';for(let x=L;x<=Rr;x+=10)d+=(x===L?'M':'L')+x+' '+TYx(x).toFixed(1);return E_('path',{d,class:'ln','stroke-opacity':.3})+E_('circle',{cx:L,cy:TYx(L),r:2,class:'ln','stroke-opacity':.4})+E_('circle',{cx:Rr,cy:TYx(Rr),r:2,class:'ln','stroke-opacity':.4})}
+  o+=E_('line',{x1:L,y1:y0,x2:Rr,y2:y0,class:'ln','stroke-opacity':.3});
+  if(b==='folio')return o+E_('path',{d:`M${L} ${y0-4}V${y0+4}M${Rr} ${y0-4}V${y0+4}`,class:'ln','stroke-opacity':.45});
+  // plate: an engraved scale, a fine tick every 15°, the four centres longer, a small open circle at each end
+  for(let l=-135;l<=225;l+=15){const x=TX(l),maj=HEMI.some(m=>m.c===l);o+=E_('line',{x1:x,y1:y0,x2:x,y2:y0-(maj?0:3),class:'ln','stroke-opacity':.35})}
+  return o+E_('circle',{cx:L-4,cy:y0,r:2.5,class:'ln','stroke-opacity':.45})+E_('circle',{cx:Rr+4,cy:y0,r:2.5,class:'ln','stroke-opacity':.45})}
+function barRail_OLD(){const t=RY(0)-24,bt=RY(CENT.length-1)+24,b=opt.bar;let o='';
+  if(b==='plain')return axisV(36,t,bt);
+  if(b==='arc'){let d='';const m=(RY(0)+RY(CENT.length-1))/2,h=(bt-t)/2;for(let y=t;y<=bt;y+=8){const u=(y-m)/h;d+=(y===t?'M':'L')+(36+28*(1-u*u)).toFixed(1)+' '+y}
+    return E_('path',{d,class:'ln','stroke-opacity':.3})+E_('circle',{cx:36,cy:t,r:2,class:'ln','stroke-opacity':.4})+E_('circle',{cx:36,cy:bt,r:2,class:'ln','stroke-opacity':.4})}
+  o+=E_('line',{x1:36,y1:t,x2:36,y2:bt,class:'ln','stroke-opacity':.3});
+  if(b==='folio')return o+E_('path',{d:`M32 ${t}H40M32 ${bt}H40`,class:'ln','stroke-opacity':.45});
+  for(let i=0;i<CENT.length-1;i++)for(let k=1;k<5;k++){const y=RY(i)+(RY(i+1)-RY(i))*k/5;o+=E_('line',{x1:36,y1:y,x2:39,y2:y,class:'ln','stroke-opacity':.3})}
+  return o+E_('circle',{cx:36,cy:t-4,r:2.5,class:'ln','stroke-opacity':.45})+E_('circle',{cx:36,cy:bt+4,r:2.5,class:'ln','stroke-opacity':.45})}
+function barMark(x,y,k,on,dir){const b=opt.bar;
+  if(b==='folio')return dir==='h'?E_('line',{x1:x,y1:y-(on?6:3.5),x2:x,y2:y+(on?6:3.5),class:'ln','stroke-opacity':on?1:.6}):E_('line',{x1:x-(on?6:3.5),y1:y,x2:x+(on?6:3.5),y2:y,class:'ln','stroke-opacity':on?1:.6});
+  if(b==='plate')return dir==='h'?E_('line',{x1:x,y1:y,x2:x,y2:y-7,class:'ln','stroke-opacity':on?1:.55})+(on?E_('path',{d:`M${x-3.5} ${y+9}L${x+3.5} ${y+9}L${x} ${y+4}Z`,fill:'var(--ink)'}):'')
+      :E_('line',{x1:x,y1:y,x2:x+4+k*1.6,y2:y,class:'ln','stroke-opacity':on?1:.55})+(on?E_('path',{d:`M${x-9} ${y-3.5}L${x-9} ${y+3.5}L${x-4} ${y}Z`,fill:'var(--ink)'}):'');
+  return mark(x,y,k,on)}
+
+function barTop(){const p=prog('t'),[tx,ty]=TGT();let o=toggleMark(tx,ty,EXP.t.on,hotT==='t');if(p<=.001)return o;
+  o+=E_('line',{x1:tx+5,y1:ty,x2:tx+5+(W()-tx-5)*p,y2:ty,class:'ln','stroke-opacity':.28})+E_('line',{x1:tx-5,y1:ty,x2:tx-5-(tx-5)*p,y2:ty,class:'ln','stroke-opacity':.28});   // drawn out both ways from its switch
+  if(opt.bar==='plate'&&p>.85)for(let l=-135;l<=225;l+=15){const x=TX(l),maj=HEMI.some(m=>m.c===l);if(!maj)o+=E_('line',{x1:x,y1:ty,x2:x,y2:ty-3,class:'ln','stroke-opacity':.35*(p-.85)/.15})}
+  if(opt.bar==='folio'&&p>.85)o+=E_('path',{d:`M${tx+5} ${ty-4}V${ty+4}`,class:'ln','stroke-opacity':.4});
+  return o}
+function barRail(){const p=prog('r'),[tx,ty]=TGR();let o=toggleMark(tx,ty,EXP.r.on,hotT==='r');if(p<=.001)return o;
+  o+=E_('line',{x1:tx,y1:ty+5,x2:tx,y2:ty+5+(H()-ty-5)*p,class:'ln','stroke-opacity':.28})+E_('line',{x1:tx,y1:ty-5,x2:tx,y2:ty-5-(ty-5)*p,class:'ln','stroke-opacity':.28});
+  if(opt.bar==='plate'&&p>.85)for(let i=0;i<CENT.length-1;i++)for(let k=1;k<5;k++){const y=RY(i)+(RY(i+1)-RY(i))*k/5;o+=E_('line',{x1:tx,y1:y,x2:tx+3,y2:y,class:'ln','stroke-opacity':.3*(p-.85)/.15})}
+  return o}
+
+// a hemisphere icon is the globe as the world draws it (0° to the right, 90°E below, 180° left, 90°W above), its half filled in
+// a hemisphere icon is drawn like a section in a technical drawing: a fine circle cut by a diameter, the half it covers hatched.
+// directions follow the world (0° right, 90°E below, 180° left, 90°W above)
+function hemiIcon(x,y,i){const c=HEMI[i].c*Math.PI/180,r=6,on=i===hemi,a0=c-Math.PI/2,a1=c+Math.PI/2,f=fzT(i),
+    p0=[x+r*Math.cos(a0),y+r*Math.sin(a0)],p1=[x+r*Math.cos(a1),y+r*Math.sin(a1)],op=on?.95:.5;
+  return E_('g',{...f,opacity:op},E_('path',{d:`M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 0 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}Z`,fill:'url(#hatch)'})
+    +E_('circle',{cx:x,cy:y,r,class:'ln'})+E_('line',{x1:p0[0].toFixed(2),y1:p0[1].toFixed(2),x2:p1[0].toFixed(2),y2:p1[1].toFixed(2),class:'ln','stroke-width':.6}))}
+
+// a century is a small circle: drawn if it has pieces here, dashed if it has none; how many is left to the open state
+function cenGlyph(x,y,f,on,r=6){const bg='';   // the axis runs straight through; the circles sit on it like beads
+  return bg+E_('circle',{cx:x,cy:y,r,class:'ln','stroke-opacity':f>0?(on?.95:.6):.45,...(f>0?{}:{'stroke-dasharray':'1.5 2'})})}
+const capT=t=>opt.bar==='folio'?t.toUpperCase():t;
+function construct(){const y0=40,x0=RXB(),inR=hv!==null,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i)));let o='';
+  const busy=hv!==null||hvH!==null||performance.now()-lastAct<1600;
+  const want=opt.lines==='full'?1:opt.lines==='hover'?(busy?1:0):0;G.a=sp(G.a??0,want,want?.09:.04);
+  const pr=prog('r'),pt=prog('t');o+=barTop()+barRail();
+  const fol=opt.bar==='folio'?{style:'font-size:10px;letter-spacing:.16em'}:{};
+  HEMI.forEach((m,i)=>{const x=TX(m.c),y=TYx(x);HP[i]=[x,y];const no=cl((pt-.3-Math.abs(x-TGT()[0])/W()*.5)/.25);o+=hemiIcon(x,y,i);const dd=Math.min(Math.abs(i-hemi),4-Math.abs(i-hemi)),ta=i===hvH||i===hemi?no||+(i===hvH):no*Math.max(.45,1-dd*.25);   // collapsed: only the icon; open (or pointing): its name and count
+    if(ta>.01)o+=E_('text',{x,y:y+24,'text-anchor':'middle',class:i===hemi?'on':'',opacity:ta,...fol,...fzT(i)},capT(m.n)+(no>.5?`<tspan class="sm" dx="5">▯×${cnt(i)}</tspan>`:''))});
+  const rowOn=i=>cl((pr-.15-i/CENT.length*.6)/.2);
+  // every row keeps its name, collapsed or open, so focus is always visible: sharp at the chosen century, softer and fainter away from it
+  CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),k=n?2+n/mx*2.5:1.2,rx=RX(i),ro=rowOn(i);
+    const d0=cen<0?2:Math.abs(i-cen),mf=i===cen||i===hv?1:Math.max(.25,1-d0*.12);   // collapsed, the marks carry the focus on their own
+    // depth of field: the circle in focus (the one you point at, else the chosen one) is full size, the others shrink and fade with distance
+    const fc=hv!==null?hv:LH?LH.c:cen>=0?cen:null,dd=fc===null?3:Math.abs(i-fc),tr=Math.max(1.3,6*Math.pow(.7,dd)),key='g'+i;FR[key]=sp(FR[key]??tr,tr,.16);
+    o+=E_('g',{opacity:Math.max(.2,1-dd*.13)},cenGlyph(rx,y,n/mx,i===cen,FR[key]));   // one glyph for every bar: a small circle; here its hatching rises with the count, an empty century is a dashed circle
+    const d=cen<0?2:Math.abs(i-cen),fade=i===cen||i===hv?1:Math.max(.18,1-d*(ro>.5?.09:.16)),left=false,lx=rx+(i===cen?20:16);   // the chosen name steps a little further out
+    const lk=LH&&LH.c===i;if(ro>0||i===hv||lk)o+=E_('text',{x:lx,y:y+4,'text-anchor':left?'end':'start',...(i===cen?{style:'font-size:15px'}:{}),style:opt.bar==='folio'?'font-feature-settings:"onum"':'',class:i===cen?'on':'',opacity:(n?1:.45)*(i===hv||lk?1:fade*ro),...fzR(i)},lab(i)+(ro>.5?`<tspan class="sm" dx="6">${n?'▯×'+n:'—'}</tspan>`:''));
+  });
+  const ax=TX(HEMI[hemi].c),ay=TYx(ax)+12,bx=(cen>=0?RX(cen):x0)+12,by=cen>=0?RY(cen):null;
+  o+=ringMotion(MS.top,hemi,i=>[TX(HEMI[i].c),TYx(TX(HEMI[i].c))],'h')+ringMotion(MS.rail,cen>=0?cen:null,i=>[RX(i),RY(i)],'v');
+  if(LH){const lx=TX(LH.lon),ly=TYx(lx);o+=E_('line',{x1:lx,y1:ly-6,x2:lx,y2:ly+6,class:'ln','stroke-opacity':.85})+E_('circle',{cx:lx,cy:ly,r:2,fill:'var(--ink)'});   // exactly where it was made
+    o+=touch([RX(LH.c),RY(LH.c)],'r')}
+  o+=touch(hvH!==null&&hvH!==hemi?[TX(HEMI[hvH].c),TYx(TX(HEMI[hvH].c))]:null,'t')+touch(hv!==null&&hv!==cen?[RX(hv),RY(hv)]:null,'r');
+  // the answer: a ring around the pieces that are both here and then, a small ring on each, lines from both bars meeting on it
+  const T=cluster(hemi,cen>=0?cen:null),a=G.a,pa=opt.lines==='point'?1:a;
+  if(T&&pa>.02){const H2=hull(T.pts);o+=shape(T,.4*pa,null,[nearest(ax,ay,H2)].concat(by!=null?[nearest(bx,by,H2)]:[]));
+    if(a>.02){const [ex,ey]=nearest(ax,ay,H2);o+=E_('line',{x1:ax,y1:ay,x2:ax+(ex-ax)*a,y2:ay+(ey-ay)*a,class:'ln','stroke-opacity':.32*a,'stroke-dasharray':'2 4'});
+      if(by!=null){const [fx,fy]=nearest(bx,by,H2);o+=E_('line',{x1:bx,y1:by,x2:bx+(fx-bx)*a,y2:by+(fy-by)*a,class:'ln','stroke-opacity':.32*a,'stroke-dasharray':'2 4'})}}}
+  // pointing: a lighter line to where that century, or that half of the world, actually is
+  const prev=(h,c,sx,sy)=>{const K=cluster(h,c);if(!K)return'';const [ex,ey]=nearest(sx,sy,hull(K.pts));
+    return E_('line',{x1:sx,y1:sy,x2:ex,y2:ey,class:'ln','stroke-opacity':.25,'stroke-dasharray':'1 5'})+shape(K,.28,'1 4',[[ex,ey]])};
+  if(hv!==null&&hv!==cen)o+=prev(hemi,hv,RX(hv)+12,RY(hv));
+  if(hvH!==null&&hvH!==hemi)o+=prev(hvH,cen>=0?cen:null,TX(HEMI[hvH].c),ay);
+  hits({left:(W()/2-305)+'px',top:'14px',width:'565px',height:'60px'},{left:'0',top:(RY(0)-56)+'px',width:(RXB()+200)+'px',height:(H()-RY(0)+16)+'px'});
+  return o}
+
+// ---- Ruler
+function ruler(){const y0=52,x0=28,mx=Math.max(1,...CENT.map((_,i)=>cnt(hemi,i))),X=l=>W()/2-260+(l+135)/360*520,c=HEMI[hemi].c;let o='';
+  for(let l=-135;l<=225;l+=15){const q=(l+135)%90===45,inn=l>=c-90&&l<=c+90;o+=E_('line',{x1:X(l),y1:y0,x2:X(l),y2:y0-(q?9:4),class:'ln','stroke-opacity':inn?.6:.22})}
+  if(!G.init){G.b0=X(Math.max(-135,c-90));G.b1=X(Math.min(225,c+90));G.init=1}G.b0=sp(G.b0,X(Math.max(-135,c-90)),.1);G.b1=sp(G.b1,X(Math.min(225,c+90)),.1);
+  o+=E_('line',{x1:G.b0,y1:y0+4,x2:G.b1,y2:y0+4,class:'ln'});
+  HEMI.forEach((m,i)=>{HP[i]=[X(m.c),y0-14];o+=E_('text',{x:X(m.c),y:y0-18,'text-anchor':'middle',class:i===hemi?'on':'',...fzT(i)},m.n)});
+  o+=E_('text',{x:x0,y:RY(0)-30,class:'sm'},'newer')+E_('text',{x:x0,y:RY(CENT.length-1)+36,class:'sm'},'older');
+  CENT.forEach((_,i)=>{const y=RY(i),n=cnt(hemi,i);o+=E_('line',{x1:x0,y1:y,x2:x0+(n?8+n/mx*26:4),y2:y,class:'ln','stroke-opacity':i===cen?1:.3});
+    if(i===cen||i===hv||hv!==null)o+=E_('text',{x:x0+44,y:y+4,class:i===cen?'on':'',opacity:i===cen||i===hv?1:.55,...fzR(i)},lab(i))});
+  hits({left:(W()/2-270)+'px',top:'10px',width:'540px',height:'56px'},{left:'0',top:(RY(0)-20)+'px',width:'200px',height:(RY(CENT.length-1)-RY(0)+40)+'px'});return o}
+
+// ---- Index
+function index(){const y0=62,x0=52;let o=barTop()+barRail();const xs=[];let x=W()/2-200;
+  const pr=prog('r'),pt=prog('t'),rn=ERA.xviii;
+  // collapsed it is only the numerals; the origin opens both axes and the names (with counts) unfold from them
+  HEMI.forEach((m,i)=>{xs[i]=x;HP[i]=[x+40,y0];const no=cl((pt-.3-Math.abs(x-TGT()[0])/W()*.5)/.25),show=i===hemi||i===hvH?Math.max(no,i===hvH?1:no):no;
+    o+=E_('text',{x,y:y0+4,class:'sm',style:i===hemi||i===hvH?'fill:var(--ink)':'',...fzT(i)},['i','ii','iii','iv'][i]);
+    if(show>.01)o+=E_('text',{x:x+14,y:y0+4,class:i===hemi?'on':'',opacity:show,...fzT(i)},m.n+(no>.5?`<tspan class="sm" dx="5">${cnt(i)}</tspan>`:''));x+=120});
+  CENT.forEach((c,i)=>{const y=RY(i),n=cnt(hemi,i),ro=cl((pr-.15-i/CENT.length*.6)/.2);
+    o+=E_('text',{x:x0,y:y+4,class:'sm',style:(i===cen||i===hv?'fill:var(--ink)':'')+(n?'':';opacity:.45'),...fzR(i)},rn[i]);
+    if(ro>0||i===hv)o+=E_('text',{x:x0+48,y:y+4,class:i===cen?'on':'',opacity:i===hv?1:ro*(i===cen?1:.6),...fzR(i)},(lab(i)==rn[i]?CENT[i]:lab(i))+(ro>.5?`<tspan class="sm" dx="6">${n||'—'}</tspan>`:''))});
+  // one ring, shared by both bars
+  const tg=hv!==null?[x0-9,RY(hv)]:hvH!==null?[xs[hvH]-8,y0]:cen>=0?[x0-9,RY(cen)]:[xs[hemi]-8,y0];if(!G.init){G.rx=tg[0];G.ry=tg[1];G.init=1}
+  G.rx=sp(G.rx,tg[0],.14);G.ry=sp(G.ry,tg[1],.14);o+=E_('circle',{cx:G.rx,cy:G.ry,r:3,class:'ln'});
+  hits({left:(W()/2-305)+'px',top:'24px',width:'585px',height:'56px'},{left:'0',top:(RY(0)-56)+'px',width:'200px',height:(RY(CENT.length-1)-RY(0)+76)+'px'});return o}
+
+function pickRow(e){
+  if(e.clientX>RXB()+180)return null;
+  let b=null,bd=1e9;CENT.forEach((_,i)=>{const d=Math.abs(RY(i)-e.clientY);if(d<bd){bd=d;b=i}});return bd<22?b:null}
+function pickH(e){let b=null,bd=1e9;HP.forEach(([x],i)=>{const d=Math.abs(e.clientX-x);if(d<bd){bd=d;b=i}});return bd<60?b:null}
+const hr=document.getElementById('hitRail'),ht=document.getElementById('hitTop');
+hr.onmousemove=e=>{const q=pickQ(e);if(q!==hvQ){hvQ=q;try{world.contentWindow.__Q(q)}catch(_){}}if(q!==null){if(hv!==null){hv=null;send({t:'hov',c:null})}return}const r=pickRow(e);if(r!==hv){hv=r;send({t:'hov',c:r})}};hr.onmouseleave=()=>{hv=null;hotT=null;if(hvQ!==null){hvQ=null;try{world.contentWindow.__Q(null)}catch(_){}}send({t:'hov',c:null})};
+const nearTg=(e,k)=>{if(opt.nav==='ruler')return false;const [x,y]=k==='r'?TGR():TGT();return Math.hypot(e.clientX-x,e.clientY-y)<14};
+const flip=k=>{const E=EXP[k];E.on=E.on?0:1;E.t0=performance.now()};   // one bar at a time
+hr.addEventListener('mousemove',e=>{hotT=nearTg(e,'r')?'r':null});ht.addEventListener('mousemove',e=>{hotT=nearTg(e,'t')?'t':hotT==='t'?null:hotT});
+hr.onclick=e=>{if(nearTg(e,'r')){flip('r');return}const q=pickQ(e);if(q!==null){try{world.contentWindow.__Q(undefined,isoQ===q?null:q)}catch(_){}return}if(dragged){dragged=false;return}const r=pickRow(e);if(r!=null)goCen(nearestFull(r))};
+hr.addEventListener('wheel',e=>{e.preventDefault();const now=performance.now();if(now-lastStep<160)return;lastStep=now;const dir=e.deltaY>0?1:-1;let i=(cen<0?(dir>0?-1:CENT.length):cen)+dir;
+  while(i>=0&&i<CENT.length&&!full(i))i+=dir;if(i>=0&&i<CENT.length)goCen(i)},{passive:false});
+let dragging=false,dragged=false;hr.addEventListener('mousedown',e=>{if(!nearTg(e,'r')){dragging=true;dragged=false}});
+addEventListener('mouseup',()=>dragging=false);
+hr.addEventListener('mousemove',e=>{if(!dragging)return;const r=pickRow(e);if(r!=null&&full(r)&&r!==cen){dragged=true;goCen(r)}});
+ht.onmousemove=e=>hvH=pickH(e);ht.onmouseleave=()=>hvH=null;ht.onclick=e=>{if(nearTg(e,'t')){flip('t');return}const h=pickH(e);if(h!=null){lastAct=performance.now();hemi=h;send({t:'hemi',h})}};
+function tick(){linked();const f={construct,ruler,index}[opt.nav];document.getElementById('geo').innerHTML=DEFS+f();requestAnimationFrame(tick)}tick();
+</script></body></html>
