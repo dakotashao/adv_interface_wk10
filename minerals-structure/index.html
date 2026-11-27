@@ -33,19 +33,19 @@ text.ax{fill:var(--ink);font-weight:500}
 // ---------- the structure: one axis grammar repeated at every scale, each level zooms into a part of the one above ----------
 const L=[
  {k:'L0',n:'Earth',sub:'Where minerals were first found',
-  axes:[['Longitude','the top bar · 4 hemispheres'],['Latitude','north ↔ south on the globe'],['Depth (rail)','Mohs hardness 1–10, chosen before entering']],
+  axes:[['Longitude','the top bar · 4 hemispheres'],['Latitude','north ↔ south on the globe'],['Depth (rail)','the year it was named, 1789 → 1982, in 25-year layers']],
   shows:['Every mineral as a point at its type locality','Clusters: most were named in Europe','Hover a point: name + where'],
-  act:['Drag: spin the globe (rotation axis = the earth’s axis)','Top bar: turn to a hemisphere','Rail: pick a hardness layer → Enter dives into the cube'],
+  act:['Drag: spin the globe (rotation axis = the earth’s axis)','Top bar: turn to a hemisphere','Rail: pick a period → Enter dives into the cube'],
   comp:['Loader (sediment settles into the globe)','Navigation · top bar','Navigation · rail','Tooltip'],
   hint:'drag to spin'},
  {k:'L1',n:'Strata',sub:'One hemisphere, sorted by what minerals are',
-  axes:[['X','Silicate ↔ Other (chemistry)'],['Y','Symmetric ↔ Asymmetric (crystal)'],['Z (depth)','Mohs hardness: soft in front, hard at the back']],
-  shows:['Each hardness layer is a frame; specimens sit in it','4 quadrants = 4 kinds of mineral, with counts','Reference mineral on each layer (talc … diamond)'],
+  axes:[['X','Silicate ↔ Other (chemistry)'],['Y','Symmetric ↔ Asymmetric (crystal)'],['Z (depth)','year named: recent in front, 1789 at the back']],
+  shows:['Each hardness layer is a frame; specimens sit in it','4 quadrants = 4 kinds of mineral, with counts','Each layer = 25 years of naming new minerals'],
   act:['Front / Side / Top: flip the cube to read the depth axis','Scroll or drag the rail: move through layers','Tap a quadrant: zoom into it (→ L2)','Filter panel: narrow what is shown'],
-  comp:['Navigation (3 bars)','Menu · quadrant','Slider · hardness (stepped)','Selector · crystal system (radio)','Toggle · polarised light','Badge · count'],
+  comp:['Navigation (3 bars)','Menu · quadrant','Slider · Mohs hardness 1–10 (stepped filter)','Selector · crystal system (radio)','Toggle · polarised light','Badge · count'],
   hint:'drag to turn · Front / Side / Top'},
  {k:'L2',n:'Quadrant',sub:'One kind, the axes get finer',
-  axes:[['X','chemical class: oxide · sulfide · carbonate · sulfate · phosphate · halide · borate'],['Y','the 7 crystal systems as ticks'],['Z (depth)','hardness, now continuous (3.25, 3.5 …)']],
+  axes:[['X','chemical class: oxide · sulfide · carbonate · sulfate · phosphate · halide · borate'],['Y','the 7 crystal systems as ticks'],['Z (depth)','year named, now continuous']],
   shows:['Each specimen as its crystal-system glyph + photo','Neighbours: same class, close hardness','Mini-map of where you are in L1'],
   act:['Pinch / wheel: zoom the plane','Drag an axis end: stretch that axis to spread crowded points','Hover: tooltip · click: open specimen (→ L3)'],
   comp:['List (specimens of this class, synced with the plane)','Tooltip','Badges · hardness, class'],
@@ -56,10 +56,10 @@ const L=[
   act:['Drag: rotate the crystal on its own a·b·c axes','Toolbar: hand lens (zoom), streak, scale, polarise','Button: cleave along its planes · collect'],
   comp:['Toolbar (field tools)','Buttons · cleave, collect','Badges','Tooltip on each axis'],
   hint:'drag to rotate the crystal'},
- {k:'L4',n:'Drawer · Notebook',sub:'What you collected, and your notes',
-  axes:[['Rows','your specimens, sorted by any axis you used (where, hardness, kind)'],['Sort control','re-sort = pick which axis the list follows']],
-  shows:['Collected specimens as drawer slots','Your field notes per specimen'],
-  act:['Sort by an axis','Write a note: locality, date, what you saw','Tap a slot: back to L3'],
+ {k:'L4',n:'Cabinet · Notebook',sub:'What you collected, as a cabinet in the same space',
+  axes:[['Y','drawers stacked by the axis you choose (year, hardness, kind)'],['X','slots inside a drawer, sorted by a second axis'],['Z','pulling a drawer out toward you = opening it']],
+  shows:['Your specimens as glyphs in their slots','An open drawer slides forward, the others stay back and soft','A field note hangs from a slot as a card'],
+  act:['Drag: turn the cabinet','Scroll: pull drawers out one by one (Z)','Re-sort: the specimens fly to their new drawers','Tap a slot: back to L3 · type a note: the card writes itself'],
   comp:['List · drawer','Text input · field notebook','Menu · sort by axis','Buttons'],
   hint:''}];
 let cur=0,rx=-.35,ry=.55,zoom=1,drag=null;
@@ -78,7 +78,7 @@ function P(v){const [x,y,z]=v,cy=Math.cos(ry),sy=Math.sin(ry),cx=Math.cos(rx),sx
 const seg=(a,b,o={})=>{const p=P(a),q=P(b);return E('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],class:'ln','stroke-opacity':o.op??.5,...(o.dash?{'stroke-dasharray':o.dash}:{})})};
 const lab=(v,t,cls='')=>{const p=P(v);return E('text',{x:p[0]+6,y:p[1]-6,class:cls},t)};
 const dot=(v,r=2.5,op=.8)=>{const p=P(v);return E('circle',{cx:p[0],cy:p[1],r,fill:'var(--ink)','fill-opacity':op})};
-const rnd=(s=>()=>(s=(s*16807)%2147483647)/2147483647)(7);const PTS=Array.from({length:90},()=>[rnd(),rnd(),rnd(),rnd()]);
+const rnd=(s=>()=>(s=(s*16807)%2147483647)/2147483647)(7);const NOW=0;const PTS=Array.from({length:90},()=>[rnd(),rnd(),rnd(),rnd()]);
 function draw(){let o='';const l=cur;
  if(l===0){ // globe: meridians + equator, points at localities, the hardness rail as a separate axis
   for(let m=0;m<12;m++){let d='';for(let k=0;k<=40;k++){const t=-Math.PI/2+Math.PI*k/40,a=m*Math.PI/6,p=P([Math.cos(t)*Math.cos(a),Math.sin(t),Math.cos(t)*Math.sin(a)]);d+=(k?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}o+=E('path',{d,class:'ln','stroke-opacity':m%3?.1:.3})}
@@ -106,9 +106,15 @@ function draw(){let o='';const l=cur;
   [['a',a],['b',b],['c',c]].forEach(([n,v])=>{o+=seg(neg(v).map(x=>x*.9),v.map(x=>x*.9),{op:.9,dash:'2 3'})+lab(v.map(x=>x*.92),n,'ax')});
   o+=seg(corners[0],corners[3],{op:.35,dash:'1 3'})+lab(corners[3],'cleavage plane');
  }
- if(l===4){ // drawer: rows sorted by one chosen axis
-  const st=document.getElementById('stage'),w=st.clientWidth,hh=st.clientHeight;for(let r=0;r<6;r++){const y=hh*.22+r*54;o+=E('rect',{x:w*.18,y,width:w*.64,height:44,class:'ln','stroke-opacity':.3,rx:3})+E('rect',{x:w*.18+10,y:y+8,width:28,height:28,class:'ln','stroke-opacity':.5})+E('text',{x:w*.18+52,y:y+20,class:'ax'},'Specimen '+(r+1))+E('text',{x:w*.18+52,y:y+34},'note…')+E('text',{x:w*.82-90,y:y+26},'hardness '+(2+r))}
-  o+=E('text',{x:w*.18,y:hh*.22-14,class:'ax'},'sort by:  where · hardness · kind');
+ if(l===4){ // a cabinet in the same space: drawers along Y, slots along X, the open drawer slides out along Z
+  const n=6,box=(x0,x1,y0,y1,z0,z1,op)=>{const c=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];return [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].map(([i,j])=>seg(c[i],c[j],{op})).join('')};
+  const t=(performance.now()/2400)%n,open=Math.floor(t),pull=Math.sin(Math.min(1,(t%1)*2)*Math.PI/2);
+  o+=box(-1.2,1.2,-1.2,1.2,-.6,.6,.25);
+  for(let i=0;i<n;i++){const y0=-1.2+i*.4,dz=i===open?pull*1.1:0,op=i===open?.85:.2;
+    o+=box(-1.15,1.15,y0+.04,y0+.36,-.55+dz,.55+dz,op);
+    for(let k=0;k<7;k++){const x=-1+k*.33;o+=dot([x,y0+.2,.3+dz],i===open?2.4:1.6,i===open?.8:.25)}
+    o+=lab([1.2,y0+.25,.6],['1975','1950','1925','1900','1875','1850'][i])}
+  o+=seg([-1.4,-1.2,.6],[-1.4,1.2,.6],{op:.8})+lab([-1.4,-1.25,.6],'Y · year named','ax')+seg([-1.2,1.35,.6],[1.2,1.35,.6],{op:.8})+lab([1.2,1.35,.6],'X · hardness','ax')+seg([1.3,-1.25,0],[1.3,-1.25,1.6],{op:.8,dash:'3 4'})+lab([1.3,-1.25,1.6],'Z · pull out','ax');
  }
  document.getElementById('g').innerHTML=o;requestAnimationFrame(draw)}
 const g=document.getElementById('g');

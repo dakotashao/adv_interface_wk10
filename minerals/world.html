@@ -212,7 +212,7 @@ const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,S;
 function resize(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';g.setTransform(d,0,0,d,0,0);S=Math.min(W,H)*.36;laid=false}
 let laid=false;resize();addEventListener('resize',resize);
 
-const CENT=['1 talc','2 gypsum','3 calcite','4 fluorite','5 apatite','6 orthoclase','7 quartz','8 topaz','9 corundum','10 diamond'];
+const CENT=['1975–2000','1950–1975','1925–1950','1900–1925','1875–1900','1850–1875','1825–1850','1800–1825','1775–1800'];
 const QUART=[{n:'0°–90°E',s:'Europe · Africa · West Asia'},{n:'90°–180°E',s:'East Asia · Oceania'},{n:'180°–90°W',s:'Pacific · Western Americas'},{n:'90°W–0°',s:'The Americas · Atlantic'}];
 const MATS=['Metal, ceramic, glass','Stone, wood, ivory','Paper, felt','Silk, cotton, textile'];
 const COMBO=['transformed + rigid','formed + rigid','transformed + flexible','formed + flexible'];
@@ -518,7 +518,7 @@ function setFocus(p){focus=p;depthT=p.cen;card.classList.remove('flip');
   card.style.width=ww+'px';card.style.height=h2+'px';fEl.style.transform=`translate(${-ww/2}px,${-h2/2-14}px)`;
   card.querySelector('.f img').src=p.img;
   card.querySelector('.b').innerHTML=`<div class="t">${p.t}</div>
-    <div class="r"><span>Hardness</span><span>${p.date||'—'}</span></div><div class="r"><span>First found</span><span>${p.c||'—'}</span></div>
+    <div class="r"><span>Named</span><span>${p.date||'—'}</span></div><div class="r"><span>First found</span><span>${p.c||'—'}</span></div>
     <div class="r"><span>Class</span><span>${p.m||'—'}</span></div><div class="r"><span>Material</span><span>${MATS[p.mat]}</span></div>
     <div class="r"><span>Crystal</span><span>${p.id}</span></div>`;
   cap.innerHTML=`<b>${p.t}</b>  ${p.date||''}`;fEl.classList.add('on');
@@ -616,7 +616,7 @@ function frame(now){
   const tA=viewDisc(0,0,AL0),tB=viewDisc(0,0,-AL0),iA=[0,0,depth*S*.9+S*.3],iB=[0,0,-(CENT.length-1-depth)*S*.9-S*.3];
   const axA=tA.map((x,k)=>x+(iA[k]-x)*m),axB=tB.map((x,k)=>x+(iB[k]-x)*m);line(axA,axB,.22);
   const sideOn=Math.min(1,(Math.abs(ox)+Math.abs(oy))/40)*m;
-  if(m<.5){labelAt(li0++,proj(tA),'<span>Softer</span>',1-m*2,['-50%','-130%','center']);labelAt(li0++,proj(tB),'<span>Harder</span>',1-m*2,['-50%','30%','center'])}
+  if(m<.5){labelAt(li0++,proj(tA),'<span>Newer</span>',1-m*2,['-50%','-130%','center']);labelAt(li0++,proj(tB),'<span>Older</span>',1-m*2,['-50%','30%','center'])}
   // inside: one frame per century, the corners run off into the past
   if(morph>.02){const FR=AL,zOf=i=>-(i-depth)*S*.9;
     [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>line([a*FR,b*FR,zOf(0)],[a*FR,b*FR,zOf(CENT.length-1)],.08*m));
@@ -678,7 +678,7 @@ function frame(now){
     g.textAlign='left';g.globalAlpha=1;if(t<1)requestAnimationFrame(render)}   // the held picture is drawn last, so no other point sits on top of it
   // labels: arm ends + quarter names; inside they teach the material scales, then the combinations
   let li=li0;const al=(p,dx,dy)=>p?[p[0]+dx,p[1]+dy]:null;
-  if(sideOn>.05){labelAt(li++,proj(axA),'<span>Softer</span>',sideOn,['-50%','-140%','center']);labelAt(li++,proj(axB),'<span>Harder</span>',sideOn,['-50%','40%','center'])}
+  if(sideOn>.05){labelAt(li++,proj(axA),'<span>Newer</span>',sideOn,['-50%','-140%','center']);labelAt(li++,proj(axB),'<span>Older</span>',sideOn,['-50%','40%','center'])}
   if(m<.5){const names=['180°','0° Greenwich','90°W','90°E'];
     armsG.forEach((a,i)=>{const p=proj(a);labelAt(li++,p&&al(p,i===0?-10:i===1?10:0,i===2?-10:i===3?10:0),`<span>${names[i]}</span>`,(1-m*2)*(p&&(p[1]<90||p[1]>H-50)?0:1),[i===0?'-100%':i===1?'0':'-50%',i===2?'-100%':i===3?'0':'-50%',i===0?'right':'left'])});
     const hq=HEMI[hemi].q,anc=[[AL0*.66,AL0*.66],[-AL0*.66,AL0*.66],[-AL0*.66,-AL0*.66],[AL0*.66,-AL0*.66]];
